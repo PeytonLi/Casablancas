@@ -1,0 +1,12 @@
+{
+  "name": "casablancas",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "convex:codegen": "convex codegen",
+    "pull:jambase": "node --env-file=.env tools/pull-jambase.mjs"
+  },
+  "dependencies": {
+    "convex": "^1.43.0"
+  }
+}

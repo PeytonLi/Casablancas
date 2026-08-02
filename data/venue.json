@@ -1,0 +1,20 @@
+{
+  "points": {
+    "south-gate": { "x": 310, "y": 655, "type": "gate", "label": "South Gate" },
+    "lands-end": { "x": 360, "y": 205, "type": "stage", "label": "Lands End Stage" },
+    "water": { "x": 335, "y": 470, "type": "water", "label": "Water refill" },
+    "restroom": { "x": 212, "y": 535, "type": "restroom", "label": "Restroom" },
+    "merch": { "x": 408, "y": 565, "type": "merch", "label": "Festival merch" },
+    "exit": { "x": 505, "y": 390, "type": "exit", "label": "North exit" }
+  },
+  "edges": [
+    ["south-gate", "restroom"],
+    ["south-gate", "merch"],
+    ["restroom", "water"],
+    ["merch", "water"],
+    ["water", "lands-end"],
+    ["water", "exit"],
+    ["exit", "lands-end"]
+  ],
+  "walk_seconds_per_unit": 0.6
+}

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 720" preserveAspectRatio="xMidYMid slice" role="img" aria-labelledby="map-title map-desc">
+  <title id="map-title">Outside Lands festival map</title>
+  <desc id="map-desc">A schematic walking map from South Gate to Lands End Stage with nearby amenities.</desc>
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#28203a"/>
+      <stop offset="1" stop-color="#171225"/>
+    </linearGradient>
+    <linearGradient id="meadow" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#395a4d"/>
+      <stop offset="1" stop-color="#243c37"/>
+    </linearGradient>
+    <filter id="route-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="pin-shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity=".45"/>
+    </filter>
+    <pattern id="trees" width="44" height="44" patternUnits="userSpaceOnUse">
+      <circle cx="11" cy="14" r="7" fill="#436552" opacity=".45"/>
+      <circle cx="30" cy="31" r="9" fill="#345443" opacity=".42"/>
+    </pattern>
+  </defs>
+  <style>
+    .map-label { fill: #f9f2dc; font: 700 15px Arial, sans-serif; letter-spacing: .08em; }
+    .map-small { fill: #c7bdab; font: 600 10px Arial, sans-serif; letter-spacing: .13em; }
+    .path { fill: none; stroke: #a69aaf; stroke-linecap: round; stroke-width: 7; opacity: .34; }
+    .map-pin { cursor: default; filter: url(#pin-shadow); }
+    .map-pin circle { fill: #171225; stroke: #f9f2dc; stroke-width: 3; transform-box: fill-box; transform-origin: center; transition: .2s ease; }
+    .map-pin text { fill: #f9f2dc; font: 700 12px Arial, sans-serif; paint-order: stroke; stroke: #171225; stroke-width: 4; stroke-linejoin: round; }
+    .map-pin .pin-symbol { stroke: none; font-size: 13px; text-anchor: middle; }
+    .map-pin[data-type="stage"] circle { fill: #ff5b35; }
+    .map-pin[data-type="water"] circle { fill: #2d8cc7; }
+    .map-pin.is-highlighted circle { stroke: #ffd447; stroke-width: 6; transform: scale(1.2); transform-origin: center; }
+    .map-pin:focus { outline: none; }
+    .map-pin:focus circle { stroke: #ffd447; stroke-width: 6; }
+    .active-route { fill: none; stroke: #ffd447; stroke-linecap: round; stroke-linejoin: round; stroke-width: 9; filter: url(#route-glow); stroke-dasharray: 13 14; animation: route-flow 1s linear infinite; }
+    @keyframes route-flow { to { stroke-dashoffset: -27; } }
+    @media (prefers-reduced-motion: reduce) { .active-route { animation: none; stroke-dasharray: none; } }
+  </style>
+
+  <rect width="600" height="720" fill="url(#ground)"/>
+  <path d="M0 0h110c31 89 20 185-18 268-39 86-55 182-34 285 11 55 1 111-22 167H0Z" fill="#17394f"/>
+  <path d="M91 0c30 94 18 180-16 264-36 88-51 187-29 292 10 50-2 109-28 164" fill="none" stroke="#3a7188" stroke-width="5" opacity=".7"/>
+  <path d="M119 22C243 54 333 40 482 82c91 25 98 132 25 184-51 36-43 97 12 137 77 56 48 182-55 213-107 33-228 5-327-52-72-42-89-152-29-218 47-51 48-115 7-171-36-49-45-128 4-153Z" fill="url(#meadow)"/>
+  <path d="M119 22C243 54 333 40 482 82c91 25 98 132 25 184-51 36-43 97 12 137 77 56 48 182-55 213-107 33-228 5-327-52-72-42-89-152-29-218 47-51 48-115 7-171-36-49-45-128 4-153Z" fill="url(#trees)"/>
+
+  <path class="path" d="M310 655 212 535 335 470 360 205"/>
+  <path class="path" d="M310 655 408 565 335 470 505 390 360 205"/>
+  <path d="M294 126h132l-14 100H309Z" fill="#ff5b35" opacity=".15" stroke="#ff5b35" stroke-width="2"/>
+  <path d="M274 682h73l18 38h-109Z" fill="#ffd447" opacity=".16"/>
+
+  <text x="25" y="78" class="map-label" transform="rotate(-90 25 78)">PACIFIC</text>
+  <text x="27" y="178" class="map-small" transform="rotate(-90 27 178)">OCEAN</text>
+  <text x="360" y="105" class="map-small" text-anchor="middle">POLO FIELD</text>
+  <text x="182" y="324" class="map-small" text-anchor="middle">GOLDEN GATE PARK</text>
+  <text x="505" y="665" class="map-small" text-anchor="end">SCHEMATIC · NOT TO SCALE</text>
+
+  <g id="route-layer" aria-hidden="true"/>
+  <g id="pin-layer"/>
+</svg>
