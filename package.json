@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test test/*.test.mjs",
     "convex:codegen": "convex codegen",
     "pull:jambase": "node --env-file=.env tools/pull-jambase.mjs"
   },

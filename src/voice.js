@@ -6,6 +6,7 @@ const jingleUrl = new URL("../assets/jingle.mp3", import.meta.url).href;
 
 let audioContext;
 let finishPlayback;
+let activeRecognition;
 
 export async function initVoice() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -20,23 +21,30 @@ export async function initVoice() {
 }
 
 export async function speak(text) {
-  if (!text?.trim()) return;
+  if (!text?.trim()) return false;
 
   let url;
   try {
     url = await tts(text.trim());
     if (!url) throw new Error("The TTS endpoint returned no audio.");
-    await play(url, "speaking");
+    return await play(url, "speaking");
   } catch (error) {
     console.warn("Speech playback failed.", error);
     setState("idle");
+    return false;
   } finally {
     if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
   }
 }
 
 export async function sing() {
-  await play(jingleUrl, "singing");
+  try {
+    return await play(jingleUrl, "singing");
+  } catch (error) {
+    console.warn("Jingle playback failed.", error);
+    setState("idle");
+    return false;
+  }
 }
 
 export function startMic(onTranscript) {
@@ -48,6 +56,7 @@ export function startMic(onTranscript) {
     input?.focus();
     return null;
   }
+  if (activeRecognition) return activeRecognition;
 
   const recognition = new SpeechRecognition();
   let submitted = false;
@@ -69,25 +78,29 @@ export function startMic(onTranscript) {
     const visibleText = (finalText || interimText).trim();
     if (input && visibleText) input.value = visibleText;
 
-    if (finalText.trim()) {
+    if (finalText.trim() && !submitted) {
       submitted = true;
       setState("idle");
       onTranscript(finalText.trim());
     }
   };
   recognition.onerror = (event) => {
+    if (activeRecognition === recognition) activeRecognition = null;
     console.warn(`Speech recognition failed: ${event.error}`);
     setState("idle");
     input?.focus();
   };
   recognition.onend = () => {
+    if (activeRecognition === recognition) activeRecognition = null;
     if (!submitted) setState("idle");
   };
 
   try {
+    activeRecognition = recognition;
     recognition.start();
     return recognition;
   } catch (error) {
+    activeRecognition = null;
     console.warn("Speech recognition could not start.", error);
     setState("idle");
     input?.focus();
@@ -100,26 +113,31 @@ function play(url, state) {
 
   return new Promise((resolve) => {
     let finished = false;
-    const finish = () => {
+    const finish = (succeeded = false) => {
       if (finished) return;
       finished = true;
       audio.onended = null;
       audio.onerror = null;
       finishPlayback = null;
       setState("idle");
-      resolve();
+      resolve(succeeded);
     };
 
     finishPlayback = finish;
     audio.pause();
     audio.src = url;
     audio.currentTime = 0;
-    audio.onended = finish;
-    audio.onerror = finish;
+    audio.onended = () => finish(true);
+    audio.onerror = () => finish(false);
     setState(state);
-    audio.play().catch((error) => {
+    try {
+      Promise.resolve(audio.play()).catch((error) => {
+        console.warn("Audio playback failed.", error);
+        finish(false);
+      });
+    } catch (error) {
       console.warn("Audio playback failed.", error);
-      finish();
-    });
+      finish(false);
+    }
   });
 }

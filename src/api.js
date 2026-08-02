@@ -29,7 +29,20 @@ function requireText(value, name) {
 }
 
 async function request(path, options) {
-  const response = await fetch(`${apiBase()}${path}`, options);
+  let response;
+  try {
+    response = await fetch(`${apiBase()}${path}`, {
+      ...options,
+      signal: options?.signal ?? AbortSignal.timeout(12000),
+    });
+  } catch (error) {
+    if (error?.name === "TimeoutError") {
+      throw new Error(`${path} request timed out after 12000ms.`, { cause: error });
+    }
+    throw new Error(`${path} request failed: ${error?.message || "Network error"}.`, {
+      cause: error,
+    });
+  }
   if (!response.ok) throw new Error(`${path} request failed (${response.status}).`);
   return response;
 }
@@ -44,7 +57,7 @@ export async function ask(text) {
 
   if (
     typeof result?.speech !== "string" ||
-    (result.dest !== null && typeof result.dest !== "string")
+    ![null, "lands-end", "water", "restroom", "merch", "exit"].includes(result.dest)
   ) {
     throw new Error("The /ask response did not match { speech, dest }.");
   }
@@ -67,7 +80,13 @@ export async function nextShow(artist) {
     `/nextshow?artist=${encodeURIComponent(requireText(artist, "artist"))}`,
   );
   const result = await response.json();
-  if (result !== null && (typeof result !== "object" || Array.isArray(result))) {
+  const fields = ["artist", "date", "venue", "city", "ticketUrl", "provider"];
+  if (
+    result !== null &&
+    (typeof result !== "object" ||
+      Array.isArray(result) ||
+      fields.some((field) => typeof result[field] !== "string"))
+  ) {
     throw new Error("The /nextshow response must be a show object or null.");
   }
   return result;

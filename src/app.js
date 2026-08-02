@@ -1,5 +1,5 @@
 import { ask, nextShow } from "./api.js";
-import { initAvatar } from "./avatar.js";
+import { initAvatar, setState } from "./avatar.js";
 import { initVoice, sing, speak, startMic } from "./voice.js";
 import { initMap, nearest, route } from "./map.js";
 
@@ -10,8 +10,11 @@ const wake = $("#wake");
 const input = $("#input");
 const card = $("#card");
 const send = $("#send");
+const mic = $("#mic");
+const quickActions = [...document.querySelectorAll(".qa[data-dest]")];
 let location = "south-gate";
 let voiceReady;
+let busy = false;
 
 initAvatar(avatar);
 
@@ -47,28 +50,34 @@ function renderCard(kicker, message) {
 
 function browserSpeak(text) {
   if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+    setState("idle");
     return Promise.resolve();
   }
 
   return new Promise((resolve) => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      setState("idle");
+      resolve();
+    };
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onend = utterance.onerror = resolve;
+    utterance.onend = utterance.onerror = finish;
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    setState("speaking");
+    try {
+      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.warn("Browser speech failed.", error);
+      finish();
+    }
   });
 }
 
 async function say(text) {
   if (!globalThis.CASABLANCAS_CONFIG?.apiBase) return browserSpeak(text);
-
-  const started = performance.now();
-  try {
-    await speak(text);
-    if (performance.now() - started < 250) await browserSpeak(text);
-  } catch (error) {
-    console.warn("Using browser speech fallback.", error);
-    await browserSpeak(text);
-  }
+  if (!(await speak(text))) return browserSpeak(text);
 }
 
 function walkLabel(minutes) {
@@ -78,19 +87,25 @@ function walkLabel(minutes) {
 }
 
 async function drawRoute(destination) {
-  if (!(await mapReady)) return {};
+  if (!(await mapReady)) return null;
 
   try {
-    return route(location, destination) || {};
+    const result = route(location, destination);
+    return result && Number.isFinite(result.minutes) ? result : null;
   } catch (error) {
     console.warn(`Could not draw a route to ${destination}.`, error);
-    return {};
+    return null;
   }
 }
 
 async function directions(destination, label, kind = "Route") {
   const origin = location;
   const result = await drawRoute(destination);
+  if (!result) {
+    const fallback = `I can't draw a route to ${label} right now.`;
+    renderCard(`${kind} · Route unavailable`, fallback);
+    return say(fallback);
+  }
   location = destination;
   const walk = walkLabel(result.minutes);
   const speech = `${label} is ${walk} away. Follow the glowing line.`;
@@ -101,6 +116,12 @@ async function directions(destination, label, kind = "Route") {
 async function stage() {
   const origin = location;
   const result = await drawRoute("lands-end");
+  if (!result) {
+    const fallback = "The Strokes are at Lands End Stage, but I can't draw the route right now.";
+    renderCard("Lands End · Route unavailable", fallback);
+    await say(fallback);
+    return sing();
+  }
   location = "lands-end";
   const walk = walkLabel(result.minutes);
   const speech = `The Strokes are at Lands End Stage, ${walk} away. Follow the glowing line.`;
@@ -181,10 +202,13 @@ const intents = [
 ];
 
 async function handle(rawText) {
+  if (busy) return;
   const text = rawText?.trim();
   if (!text) return;
+  busy = true;
   input.value = "";
-  send.disabled = true;
+  [send, mic, ...quickActions].forEach((control) => { control.disabled = true; });
+  card.ariaBusy = "true";
 
   try {
     await enableVoice();
@@ -192,9 +216,14 @@ async function handle(rawText) {
     if (local) return await local[1]();
 
     const answer = await ask(text);
-    const result = answer.dest ? await drawRoute(answer.dest) : {};
-    if (answer.dest) location = answer.dest;
-    const walk = Number.isFinite(result.minutes) ? ` · ${result.minutes} min` : "";
+    const result = answer.dest ? await drawRoute(answer.dest) : null;
+    if (answer.dest && !result) {
+      const fallback = "I found the destination, but I can't draw that route right now.";
+      renderCard("Festival guide · Route unavailable", fallback);
+      return await say(fallback);
+    }
+    if (result) location = answer.dest;
+    const walk = result ? ` · ${result.minutes} min` : "";
     renderCard(`Festival guide${walk}`, answer.speech);
     await say(answer.speech);
   } catch (error) {
@@ -203,7 +232,9 @@ async function handle(rawText) {
     renderCard("Still here", fallback);
     await browserSpeak(fallback);
   } finally {
-    send.disabled = false;
+    busy = false;
+    [send, mic, ...quickActions].forEach((control) => { control.disabled = false; });
+    card.removeAttribute("aria-busy");
   }
 }
 
@@ -212,10 +243,10 @@ send.addEventListener("click", () => handle(input.value));
 input.addEventListener("keydown", (event) => {
   if (event.key === "Enter") handle(input.value);
 });
-$("#mic").addEventListener("click", async () => {
+mic.addEventListener("click", async () => {
   await enableVoice();
   startMic(handle);
 });
-document.querySelectorAll(".qa[data-dest]").forEach((button) => {
+quickActions.forEach((button) => {
   button.addEventListener("click", () => handle(button.dataset.dest));
 });
