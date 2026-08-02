@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070707" />
+    <meta
+      name="description"
+      content="Casablanca — an interactive synthetic music-avatar demo."
+    />
+    <title>Casablanca — Interactive Avatar</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main id="app" class="app-shell mode-idle">
+      <header class="brand">CASABLANCA</header>
+
+      <section id="avatar" class="avatar-stage" aria-label="Interactive demo avatar">
+        <div class="portrait-frame" aria-label="Synthetic demo avatar portrait">
+          <img class="portrait-base" src="/public/casablanca-avatar.png" alt="" />
+          <img class="portrait-jaw" src="/public/casablanca-avatar.png" alt="" aria-hidden="true" />
+          <div class="red-practical" aria-hidden="true"></div>
+          <div class="portrait-vignette" aria-hidden="true"></div>
+        </div>
+
+        <div class="avatar-disclosure">
+          <span class="live-dot"></span>
+          AI demo avatar <span aria-hidden="true">·</span> Original synthetic voice
+        </div>
+
+        <div class="performance-caption" aria-live="polite"></div>
+      </section>
+
+      <aside class="conversation-panel">
+        <div class="answer-block" aria-live="polite">
+          <span id="mode-label" class="sr-only" aria-live="polite">Ready</span>
+          <h1>Welcome.</h1>
+          <p id="answer">I’m Casablanca. I write songs, shape sounds, and love connecting with people who get the vibe.</p>
+        </div>
+
+        <form id="prompt-form" class="prompt-form">
+          <label class="sr-only" for="input">Ask the avatar anything</label>
+          <input id="input" placeholder="Ask me anything…" autocomplete="off" />
+          <button id="send" class="send-button" type="submit" aria-label="Send question">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12h13M13 6l6 6-6 6"></path>
+            </svg>
+          </button>
+        </form>
+
+        <div class="action-stack">
+          <button id="mic" class="action-button talk-button" type="button">
+            <span class="button-icon">
+              <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="8" y="3" width="8" height="12" rx="4"></rect>
+                <path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path>
+              </svg>
+              <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="6" y="6" width="12" height="12" rx="1"></rect>
+              </svg>
+            </span>
+            <span class="talk-label">Talk</span>
+            <span class="audio-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          </button>
+
+          <button id="sing" class="action-button sing-button" type="button">
+            <span class="button-icon">
+              <svg class="note-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 18V6l10-2v12"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="16" cy="16" r="3"></circle>
+              </svg>
+              <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="6" y="6" width="12" height="12" rx="1"></rect>
+              </svg>
+            </span>
+            <span class="sing-label">Sing an original hook</span>
+          </button>
+        </div>
+
+      </aside>
+    </main>
+
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>

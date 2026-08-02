@@ -1,0 +1,10 @@
+{
+  "name": "casablanca-avatar-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m http.server 4173",
+    "check": "node --check src/app.js && node --check src/avatar.js && node --check src/voice.js"
+  }
+}
