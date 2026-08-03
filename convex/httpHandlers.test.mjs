@@ -118,7 +118,7 @@ test("handleTts returns ElevenLabs MP3 bytes with the configured voice", async (
     new Request("https://demo.convex.site/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: "Lands End is five minutes away." }),
+      body: JSON.stringify({ text: "Okay, follow me." }),
     }),
     {
       apiKey: "server-key",
@@ -140,7 +140,7 @@ test("handleTts returns ElevenLabs MP3 bytes with the configured voice", async (
   assert.equal(captured.options.headers["xi-api-key"], "server-key");
   assert.equal(captured.options.headers.Accept, "audio/mpeg");
   assert.deepEqual(JSON.parse(captured.options.body), {
-    text: "Lands End is five minutes away.",
+    text: "Okay, follow me.",
     model_id: "eleven_flash_v2_5",
   });
   assert.equal(response.status, 200);

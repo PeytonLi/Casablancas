@@ -9,13 +9,8 @@ const RESPONSES_URL = "https://api.openai.com/v1/responses";
 const SPEECH_URL = "https://api.elevenlabs.io/v1/text-to-speech";
 const FESTIVAL_TIME_ZONE = "America/Los_Angeles";
 const APPROVED_TTS_PHRASES = new Set([
-  "Lands End is five minutes away.",
-  "Follow the glowing line to Lands End. It is about five minutes away.",
-  "The nearest water station is along the route.",
-  "The nearest restroom is marked beside the route.",
-  "The merch stand is just beyond Lands End.",
-  "The nearest exit is marked on the glowing route.",
-  "I can help with the stage, water, restrooms, merch, or the exit.",
+  "Okay, follow me.",
+  "The next show is The Strokes at Lands End on August 8.",
 ]);
 
 type OpenAIDependencies = {
