@@ -2,66 +2,51 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#171225">
-    <meta name="description" content="Casablancas, a voice-powered guide to The Strokes at Outside Lands.">
-    <title>Casablancas — Festival Guide</title>
+    <meta name="description" content="Walking directions across Outside Lands.">
+    <title>Outside Lands Map</title>
+    <link rel="icon" href="assets/app-icon.png">
+    <link rel="apple-touch-icon" href="assets/app-icon.png">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <a class="skip-link" href="#input">Skip to ask Casablancas</a>
-
-    <main class="app">
-      <header class="masthead">
-        <div>
-          <p class="eyebrow">Outside Lands · Saturday</p>
-          <h1>Casablancas</h1>
+    <main id="app" class="app">
+      <section class="map-stage" aria-label="Outside Lands navigation map">
+        <div id="map" class="map">
+          <p class="map-loading" role="status">Loading festival map…</p>
         </div>
-        <button id="wake" class="wake" type="button">Enable sound</button>
+      </section>
+
+      <header class="directions" aria-live="polite">
+        <div id="direction-arrow" class="direction-arrow" aria-hidden="true">↑</div>
+        <div>
+          <p id="direction">Head northwest</p>
+          <span id="destination">toward Lands End Stage</span>
+        </div>
+        <button id="tilt" type="button" aria-pressed="true">3D</button>
       </header>
 
-      <section id="map" class="map" aria-label="Festival map and walking route">
-        <p class="map-loading" role="status">Loading festival map…</p>
-      </section>
-
-      <section class="guide" aria-label="Voice guide">
-        <div id="avatar" aria-live="polite">
-          <span class="avatar-placeholder" aria-hidden="true">C</span>
+      <section class="route-card" aria-label="Route details">
+        <div class="route-summary">
+          <div>
+            <p class="eyebrow">Walking route</p>
+            <h1 id="route-name">South Gate → Lands End</h1>
+          </div>
+          <strong id="walk-time">8 min</strong>
         </div>
-        <div class="guide-copy">
-          <p class="eyebrow">Your festival guide</p>
-          <p>Ask me how to reach The Strokes.</p>
-        </div>
-      </section>
-
-      <section class="quick-actions" aria-label="Quick destinations">
-        <button class="qa" type="button" data-dest="lands-end"><span aria-hidden="true">★</span> Stage</button>
-        <button class="qa" type="button" data-dest="water"><span aria-hidden="true">●</span> Water</button>
-        <button class="qa" type="button" data-dest="restroom"><span aria-hidden="true">◆</span> Restroom</button>
-        <button class="qa" type="button" data-dest="merch"><span aria-hidden="true">✦</span> Merch</button>
-        <button class="qa" type="button" data-dest="exit"><span aria-hidden="true">↗</span> Exit</button>
-      </section>
-
-      <section class="dock" aria-label="Ask Casablancas">
-        <div id="card" class="card" aria-live="polite">
-          <p class="card-kicker">South Gate → Lands End</p>
-          <p>Choose a destination or ask for directions.</p>
-        </div>
-
-        <div class="ask-bar" role="search">
-          <label class="sr-only" for="input">Ask for a stage, amenity, or next show</label>
-          <input id="input" type="text" inputmode="text" autocomplete="off" placeholder="Take me to The Strokes…">
-          <button id="mic" class="icon-button" type="button" aria-label="Ask with your voice">
-            <span aria-hidden="true">●</span>
-          </button>
-          <button id="send" class="send" type="button">Ask</button>
-        </div>
+        <nav class="destinations" aria-label="Choose destination">
+          <button type="button" data-dest="lands-end">★<span>Stage</span></button>
+          <button type="button" data-dest="water">●<span>Water</span></button>
+          <button type="button" data-dest="restroom">◆<span>Restroom</span></button>
+          <button type="button" data-dest="merch">✦<span>Merch</span></button>
+          <button type="button" data-dest="exit">↗<span>Exit</span></button>
+        </nav>
       </section>
     </main>
-
     <script>
       globalThis.CASABLANCAS_CONFIG ??= {
-        apiBase: "https://gallant-lyrebird-360.convex.site",
+        apiBase: "https://healthy-goshawk-628.convex.site",
       };
     </script>
     <script type="module" src="src/app.js"></script>

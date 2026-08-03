@@ -1,20 +1,27 @@
 {
   "points": {
-    "south-gate": { "x": 310, "y": 655, "type": "gate", "label": "South Gate" },
-    "lands-end": { "x": 360, "y": 205, "type": "stage", "label": "Lands End Stage" },
-    "water": { "x": 335, "y": 470, "type": "water", "label": "Water refill" },
-    "restroom": { "x": 212, "y": 535, "type": "restroom", "label": "Restroom" },
-    "merch": { "x": 408, "y": 565, "type": "merch", "label": "Festival merch" },
-    "exit": { "x": 505, "y": 390, "type": "exit", "label": "North exit" }
+    "south-gate": { "x": 508, "y": 526, "type": "gate", "label": "South Gate" },
+    "south-path": { "x": 454, "y": 487, "type": "path", "label": "South path", "hidden": true },
+    "polo-south": { "x": 399, "y": 481, "type": "path", "label": "Polo Field south path", "hidden": true },
+    "lands-end": { "x": 350, "y": 431, "type": "stage", "label": "Lands End Stage" },
+    "polo-west": { "x": 370, "y": 380, "type": "path", "label": "Polo Field west path", "hidden": true },
+    "water": { "x": 416, "y": 328, "type": "water", "label": "Water refill" },
+    "restroom": { "x": 459, "y": 310, "type": "restroom", "label": "Restrooms" },
+    "merch": { "x": 431, "y": 405, "type": "merch", "label": "OSL Marketplace" },
+    "north-path": { "x": 486, "y": 256, "type": "path", "label": "North path", "hidden": true },
+    "exit": { "x": 505, "y": 151, "type": "exit", "label": "North Gate exit" }
   },
   "edges": [
-    ["south-gate", "restroom"],
-    ["south-gate", "merch"],
-    ["restroom", "water"],
+    ["south-gate", "south-path"],
+    ["south-path", "polo-south"],
+    ["polo-south", "lands-end"],
+    ["polo-south", "merch"],
+    ["lands-end", "polo-west"],
+    ["polo-west", "water"],
     ["merch", "water"],
-    ["water", "lands-end"],
-    ["water", "exit"],
-    ["exit", "lands-end"]
+    ["water", "restroom"],
+    ["restroom", "north-path"],
+    ["north-path", "exit"]
   ],
-  "walk_seconds_per_unit": 0.6
+  "walk_seconds_per_unit": 2.4
 }

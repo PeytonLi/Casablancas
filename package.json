@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "convex:codegen": "convex codegen",
-    "pull:jambase": "node --env-file=.env tools/pull-jambase.mjs"
+    "pull:jambase": "node --env-file=.env tools/pull-jambase.mjs",
+    "test": "node --test test/*.test.mjs && node tools/pull-jambase.mjs --self-test"
   },
   "dependencies": {
     "convex": "^1.43.0"

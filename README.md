@@ -1,6 +1,6 @@
 # Casablancas
 
-Casablancas is a voice-powered Outside Lands guide built around The Strokes. It answers festival questions, draws walking routes, finds nearby amenities, plays an original jingle, and links to the band's next show.
+Casablancas is a voice-powered Outside Lands and live-music guide. It answers questions about artists, merchandise, venues, upcoming concerts, and past shows while keeping the answer grounded in JamBase and official web sources.
 
 ## How it works
 
@@ -8,7 +8,8 @@ Casablancas is a voice-powered Outside Lands guide built around The Strokes. It 
 Static browser app
   ├─ local keyword routing → map, amenities, and scripted demo
   └─ Convex HTTP actions
-       ├─ /ask      → OpenAI
+       ├─ /ask      → OpenAI + JamBase tool + official web search
+       ├─ /transcribe → OpenAI audio transcription for Firefox voice input
        ├─ /tts      → ElevenLabs
        └─ /nextshow → Convex shows table / JamBase fallback
 ```
@@ -31,6 +32,7 @@ Set the server-side secrets interactively so they do not appear in shell history
 ```bash
 npx convex env set OPENAI_API_KEY
 npx convex env set ELEVENLABS_API_KEY
+npx convex env set JAMBASE_API_TOKEN
 ```
 
 Update `globalThis.CASABLANCAS_CONFIG.apiBase` near the bottom of `index.html` if your deployment differs. HTTP actions must use the `https://<deployment>.convex.site` hostname, not `.convex.cloud`.
@@ -49,7 +51,7 @@ Open the displayed local URL and select **Enable sound** before starting the dem
 |---|---|---|
 | `OPENAI_API_KEY` | Convex environment | Unmatched guide questions through `/ask` |
 | `ELEVENLABS_API_KEY` | Convex environment | Guide speech through `/tts` |
-| `JAMBASE_API_TOKEN` | Local `.env` | Pull upcoming shows for seeding |
+| `JAMBASE_API_TOKEN` | Convex environment + local `.env` | Live agent searches and optional show seeding |
 | `CONVEX_SITE_URL` | Local `.env.local` | Run the deployed endpoint canary |
 
 Both `.env` files are ignored by Git. The ElevenLabs voice ID is configured in `convex/http.ts`; only use a voice you are authorized to deploy.
@@ -67,8 +69,7 @@ Without seeded data, `/nextshow` returns the built-in JamBase listing for The St
 ## Tests
 
 ```bash
-node --test test/a2.test.mjs
-node tools/pull-jambase.mjs --self-test
+npm test
 node --env-file=.env.local test/phase0-canary.mjs
 ```
 
@@ -78,11 +79,22 @@ The canary requires a deployed backend and `CONVEX_SITE_URL=https://<deployment>
 
 | Method | Path | Request | Response |
 |---|---|---|---|
-| `POST` | `/ask` | `{ "text": "..." }` | `{ "speech": string, "dest": string \| null }` |
+| `POST` | `/ask` | `{ "text": "When did Radiohead last play New York?" }` | `{ "answer": string, "speech": string, "dest": string \| null, "sources": [{ "label": string, "url": string }] }` |
+| `POST` | `/transcribe` | Multipart form field `audio` (WebM, max 10 MB) | `{ "text": string }` |
 | `POST` | `/tts` | `{ "text": "..." }` | MP3 audio |
 | `GET` | `/nextshow?artist=The%20Strokes` | — | Show object or `null` |
 
 Every route supports cross-origin browser requests. `/ask` and `/tts` limit text to 500 characters.
+
+The home-page avatar can call `ask(question)`, render `answer` and `sources`, then speak `speech`. JamBase-backed results must display the returned JamBase attribution and ticket/event links with `rel="nofollow"`.
+
+```js
+import { ask } from "./src/api.js";
+
+const result = await ask(question);
+answerElement.textContent = result.answer;
+await speak(result.speech);
+```
 
 ## Project structure
 
@@ -105,6 +117,7 @@ Deploy the backend, set the production environment variables, update `apiBase` t
 npx convex deploy
 npx convex env set --prod OPENAI_API_KEY
 npx convex env set --prod ELEVENLABS_API_KEY
+npx convex env set --prod JAMBASE_API_TOKEN
 ```
 
 Run the phase-zero canary against production before sharing the site.
