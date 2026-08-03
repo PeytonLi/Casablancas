@@ -1,20 +1,48 @@
 {
   "points": {
-    "south-gate": { "x": 310, "y": 655, "type": "gate", "label": "South Gate" },
-    "lands-end": { "x": 360, "y": 205, "type": "stage", "label": "Lands End Stage" },
-    "water": { "x": 335, "y": 470, "type": "water", "label": "Water refill" },
-    "restroom": { "x": 212, "y": 535, "type": "restroom", "label": "Restroom" },
-    "merch": { "x": 408, "y": 565, "type": "merch", "label": "Festival merch" },
-    "exit": { "x": 505, "y": 390, "type": "exit", "label": "North exit" }
+    "south-gate": {
+      "x": 511,
+      "y": 531,
+      "type": "gate",
+      "label": "South Gate"
+    },
+    "lands-end": {
+      "x": 373,
+      "y": 447,
+      "type": "stage",
+      "label": "Lands End Stage"
+    },
+    "water-1": {
+      "x": 489,
+      "y": 476,
+      "type": "water",
+      "label": "Water"
+    },
+    "restroom-1": {
+      "x": 550,
+      "y": 417,
+      "type": "restroom",
+      "label": "Restroom"
+    },
+    "merch-1": {
+      "x": 402,
+      "y": 353,
+      "type": "merch",
+      "label": "Merch"
+    },
+    "exit-1": {
+      "x": 455,
+      "y": 534,
+      "type": "exit",
+      "label": "South VIP Exit"
+    }
   },
   "edges": [
-    ["south-gate", "restroom"],
-    ["south-gate", "merch"],
-    ["restroom", "water"],
-    ["merch", "water"],
-    ["water", "lands-end"],
-    ["water", "exit"],
-    ["exit", "lands-end"]
+    ["south-gate", "water-1"],
+    ["water-1", "lands-end"],
+    ["water-1", "restroom-1"],
+    ["lands-end", "merch-1"],
+    ["south-gate", "exit-1"]
   ],
-  "walk_seconds_per_unit": 0.6
+  "walk_seconds_per_unit": 1.8
 }

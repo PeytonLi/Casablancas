@@ -1,69 +1,164 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#171225">
-    <meta name="description" content="Casablancas, a voice-powered guide to The Strokes at Outside Lands.">
-    <title>Casablancas — Festival Guide</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#050708" />
+    <meta
+      name="description"
+      content="Casablancas - a tactile mobile performance companion for festival fans."
+    />
+    <title>Casablancas - Artist Mode</title>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+    <link rel="stylesheet" href="/src/styles.css?v=full-charli-1" />
   </head>
   <body>
-    <a class="skip-link" href="#input">Skip to ask Casablancas</a>
-
-    <main class="app">
-      <header class="masthead">
-        <div>
-          <p class="eyebrow">Outside Lands · Saturday</p>
-          <h1>Casablancas</h1>
+    <main id="app" class="phone-shell mode-idle" data-view="home">
+      <header class="app-bar">
+        <div class="wordmark">
+          <svg class="spark-mark" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 1.5c.55 6.7 3.8 9.95 10.5 10.5-6.7.55-9.95 3.8-10.5 10.5C11.45 15.8 8.2 12.55 1.5 12 8.2 11.45 11.45 8.2 12 1.5Z" />
+          </svg>
+          <span>CASABLANCAS</span>
         </div>
-        <button id="wake" class="wake" type="button">Enable sound</button>
+        <div class="artist-mode"><span></span>Artist mode</div>
       </header>
 
-      <section id="map" class="map" aria-label="Festival map and walking route">
-        <p class="map-loading" role="status">Loading festival map…</p>
+      <section id="avatar" class="performer-stage" aria-label="Digital pop performer">
+        <div class="light-bars" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </div>
+        <div class="stage-pulse" aria-hidden="true"></div>
+        <div id="avatar-rig" class="avatar-rig" role="img" aria-label="Stylized digital pop performer">
+          <div class="rig-fallback" aria-hidden="true">
+            <i class="fallback-hair"></i>
+            <i class="fallback-head"></i>
+            <i class="fallback-body"></i>
+            <i class="fallback-arm left"></i>
+            <i class="fallback-arm right"></i>
+            <i class="fallback-leg left"></i>
+            <i class="fallback-leg right"></i>
+          </div>
+        </div>
+        <div class="stage-platform" aria-hidden="true"></div>
+        <div id="lyric" class="performance-lyric" aria-live="polite"></div>
       </section>
 
-      <section class="guide" aria-label="Voice guide">
-        <div id="avatar">
-          <span class="avatar-placeholder" aria-hidden="true">C</span>
-        </div>
-        <div class="guide-copy">
-          <p class="eyebrow">Your festival guide</p>
-          <p>Ask me how to reach The Strokes.</p>
-        </div>
-      </section>
+      <div id="visualizer" class="signal-strip" aria-label="Audio waveform"></div>
 
-      <section class="quick-actions" aria-label="Quick destinations">
-        <button class="qa" type="button" data-dest="lands-end"><span aria-hidden="true">★</span> Stage</button>
-        <button class="qa" type="button" data-dest="water"><span aria-hidden="true">●</span> Water</button>
-        <button class="qa" type="button" data-dest="restroom"><span aria-hidden="true">◆</span> Restroom</button>
-        <button class="qa" type="button" data-dest="merch"><span aria-hidden="true">✦</span> Merch</button>
-        <button class="qa" type="button" data-dest="exit"><span aria-hidden="true">↗</span> Exit</button>
-      </section>
-
-      <section class="dock" aria-label="Ask Casablancas">
-        <div id="card" class="card" aria-live="polite">
-          <p class="card-kicker">South Gate → Lands End</p>
-          <p>Choose a destination or ask for directions.</p>
-        </div>
-
-        <div class="ask-bar" role="search">
-          <label class="sr-only" for="input">Ask for a stage, amenity, or next show</label>
-          <input id="input" type="text" inputmode="text" autocomplete="off" placeholder="Take me to The Strokes…">
-          <button id="mic" class="icon-button" type="button" aria-label="Ask with your voice">
-            <span aria-hidden="true">●</span>
+      <section class="song-selector" aria-label="Choose music">
+        <div class="tuner-scale" aria-hidden="true"></div>
+        <div
+          id="track-list"
+          class="track-list"
+          role="listbox"
+          tabindex="0"
+          aria-label="Swipe or use left and right arrows to tune between tracks"
+          aria-activedescendant="track-0"
+        >
+          <button id="track-0" class="track-option selected" type="button" data-track="0" role="option" aria-selected="true">
+            <span>360</span>
           </button>
-          <button id="send" class="send" type="button">Ask</button>
+          <button id="track-1" class="track-option" type="button" data-track="1" role="option" aria-selected="false">
+            <span>Von dutch</span>
+          </button>
+          <button id="track-2" class="track-option" type="button" data-track="2" role="option" aria-selected="false">
+            <span>Apple</span>
+          </button>
+          <button id="track-3" class="track-option" type="button" data-track="3" role="option" aria-selected="false">
+            <span>Club classics</span>
+          </button>
+        </div>
+        <div class="tuner-needle" aria-hidden="true"><i></i></div>
+      </section>
+
+      <nav class="bottom-nav" aria-label="Primary navigation">
+        <button class="nav-button selected" type="button" data-view-target="home" aria-current="page">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 10 8-7 8 7v10H4V10Z"></path></svg>
+          <span>Home</span>
+        </button>
+        <button class="nav-button" type="button" data-view-target="map">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Zm6-3v15m6-12v15"></path></svg>
+          <span>Map</span>
+        </button>
+        <button class="nav-button" type="button" data-view-target="shows">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4V6Zm0 4a2 2 0 0 0 0 4m16-4a2 2 0 0 1 0 4"></path></svg>
+          <span>Shows</span>
+        </button>
+      </nav>
+
+      <section id="map-view" class="secondary-view map-view" hidden aria-label="Walking navigation from Lands End to Sutro Stage">
+        <div id="map" class="festival-map"></div>
+        <div class="map-search-panel">
+          <label class="map-search-box" for="map-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg>
+            <input id="map-search" type="search" autocomplete="off" placeholder="Search stages, food, bathrooms…" />
+          </label>
+          <div class="map-category-chips" aria-label="Filter festival places">
+            <button class="map-chip selected" type="button" data-map-category="all" aria-pressed="true">All</button>
+            <button class="map-chip" type="button" data-map-category="stage" aria-pressed="false">Stages</button>
+            <button class="map-chip" type="button" data-map-category="restroom" aria-pressed="false">Bathrooms</button>
+            <button class="map-chip" type="button" data-map-category="water" aria-pressed="false">Water</button>
+            <button class="map-chip" type="button" data-map-category="food" aria-pressed="false">Food</button>
+            <button class="map-chip" type="button" data-map-category="attraction" aria-pressed="false">Attractions</button>
+          </div>
+        </div>
+        <div id="map-search-results" class="map-search-results" role="listbox" aria-label="Festival search results" hidden></div>
+        <div class="navigation-top-card" aria-live="polite">
+          <div id="turn-icon" class="turn-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path id="turn-path" d="M16 27V5m-7 7 7-7 7 7"></path></svg>
+          </div>
+          <div class="navigation-instruction">
+            <span id="navigation-status">Route preview</span>
+            <h2 id="route-heading">Head northeast</h2>
+            <p id="route-copy">Follow the Polo Field path toward Sutro Stage.</p>
+          </div>
+          <button class="view-close map-close" type="button" data-view-target="home" aria-label="Close navigation">×</button>
+        </div>
+        <article id="map-place-card" class="map-place-card" hidden>
+          <button id="map-place-close" class="map-place-close" type="button" aria-label="Close place details">×</button>
+          <span id="map-place-category">Stage</span>
+          <strong id="map-place-name">Sutro Stage</strong>
+          <p id="map-place-description">Live music at Lindley Meadow.</p>
+          <button id="map-place-navigate" type="button">Navigate here</button>
+        </article>
+        <div class="navigation-bottom-card">
+          <div class="navigation-metrics">
+            <strong id="route-time">7 min</strong>
+            <span id="route-distance">0.4 mi</span>
+            <small>to Sutro Stage</small>
+          </div>
+          <div class="navigation-controls">
+            <button id="navigation-primary" class="navigation-primary" type="button">Start walking</button>
+            <button id="navigation-restart" class="navigation-restart" type="button" aria-label="Restart route">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6M5.5 9A8 8 0 1 1 4 14"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div id="map-error" class="map-error" hidden>
+          <strong>Map couldn’t load</strong>
+          <span>Check the connection and try again.</span>
+          <button id="map-retry" type="button">Retry</button>
         </div>
       </section>
+
+      <section id="shows-view" class="secondary-view shows-view" hidden aria-label="Upcoming shows">
+        <header>
+          <div><span>Artist mode</span><h2>Upcoming shows</h2></div>
+          <button class="view-close" type="button" data-view-target="home" aria-label="Close shows">×</button>
+        </header>
+        <div class="show-poster" aria-hidden="true"><span>CASABLANCAS</span><strong>LIVE</strong></div>
+        <div class="show-copy">
+          <span>Live dates</span>
+          <h3>Fresh from JamBase</h3>
+          <p>Official show and ticket links will appear here when the live artist feed is connected.</p>
+        </div>
+      </section>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
 
-    <script>
-      globalThis.CASABLANCAS_CONFIG ??= {
-        apiBase: "https://gallant-lyrebird-360.convex.site",
-      };
-    </script>
-    <script type="module" src="src/app.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+    <script type="module" src="/src/app.js?v=full-charli-1"></script>
   </body>
 </html>

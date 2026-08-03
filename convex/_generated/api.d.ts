@@ -9,6 +9,9 @@
  */
 
 import type * as http from "../http.js";
+import type * as httpHandlers from "../httpHandlers.js";
+import type * as lib from "../lib.js";
+import type * as showData from "../showData.js";
 import type * as shows from "../shows.js";
 
 import type {
@@ -19,6 +22,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   http: typeof http;
+  httpHandlers: typeof httpHandlers;
+  lib: typeof lib;
+  showData: typeof showData;
   shows: typeof shows;
 }>;
 

@@ -1,11 +1,13 @@
 {
-  "name": "casablancas",
+  "name": "casablanca-avatar-demo",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --test test/*.test.mjs",
-    "convex:codegen": "convex codegen",
-    "pull:jambase": "node --env-file=.env tools/pull-jambase.mjs"
+    "dev": "python3 -m http.server 4173",
+    "render:media": "node tools/render-performances.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check src/app.js && node --check src/avatar.js && node --check src/map.js && node --check src/music.js && node --check src/performer-rig.js && node --check src/voice.js"
   },
   "dependencies": {
     "convex": "^1.43.0"

@@ -1,252 +1,507 @@
-import { ask, nextShow } from "./api.js";
-import { initAvatar, setState } from "./avatar.js";
-import { initVoice, sing, speak, startMic } from "./voice.js";
-import { initMap, nearest, route } from "./map.js";
+import {
+  destroyMap,
+  focusPlace,
+  initMap,
+  navigateToPlace,
+  restartNavigation,
+  searchPlaces,
+  setCategoryFilter,
+  startNavigation,
+  toggleNavigation,
+} from "./map.js?v=full-charli-1";
+import {
+  getAudioLevel,
+  getTracks,
+  hasTrackSource,
+  prepareTrackSources,
+  startTrack,
+  stopTrack,
+} from "./music.js?v=radio-fallback-1";
+import { createPerformerRig } from "./performer-rig.js";
 
-const $ = (selector) => document.querySelector(selector);
-const map = $("#map");
-const avatar = $("#avatar");
-const wake = $("#wake");
-const input = $("#input");
-const card = $("#card");
-const send = $("#send");
-const mic = $("#mic");
-const quickActions = [...document.querySelectorAll(".qa[data-dest]")];
-let location = "south-gate";
-let voiceReady;
-let busy = false;
+const tracks = getTracks();
+const app = document.querySelector("#app");
+const avatar = document.querySelector("#avatar");
+const rigContainer = document.querySelector("#avatar-rig");
+const lyric = document.querySelector("#lyric");
+const trackList = document.querySelector("#track-list");
+const trackButtons = [...document.querySelectorAll("[data-track]")];
+const visualizer = document.querySelector("#visualizer");
+const mapView = document.querySelector("#map-view");
+const showsView = document.querySelector("#shows-view");
+const mapContainer = document.querySelector("#map");
+const routeHeading = document.querySelector("#route-heading");
+const routeTime = document.querySelector("#route-time");
+const routeCopy = document.querySelector("#route-copy");
+const routeDistance = document.querySelector("#route-distance");
+const turnPath = document.querySelector("#turn-path");
+const navigationStatus = document.querySelector("#navigation-status");
+const navigationPrimary = document.querySelector("#navigation-primary");
+const navigationRestart = document.querySelector("#navigation-restart");
+const mapError = document.querySelector("#map-error");
+const mapRetry = document.querySelector("#map-retry");
+const mapSearch = document.querySelector("#map-search");
+const mapSearchResults = document.querySelector("#map-search-results");
+const mapCategoryChips = [...document.querySelectorAll("[data-map-category]")];
+const mapPlaceCard = document.querySelector("#map-place-card");
+const mapPlaceCategory = document.querySelector("#map-place-category");
+const mapPlaceName = document.querySelector("#map-place-name");
+const mapPlaceDescription = document.querySelector("#map-place-description");
+const mapPlaceNavigate = document.querySelector("#map-place-navigate");
+const mapPlaceClose = document.querySelector("#map-place-close");
+const navButtons = [...document.querySelectorAll(".nav-button")];
+const viewButtons = [...document.querySelectorAll("[data-view-target]")];
+const toast = document.querySelector("#toast");
 
-initAvatar(avatar);
+let selectedTrack = 0;
+let performanceActive = false;
+let mapReady;
+let toastTimer;
+let playbackGeneration = 0;
+let navigationState = "preview";
+let selectedPlaceId = null;
+let tunerSettleTimer;
+let tunerSyncTimer;
+let tunerSyncing = false;
+let wheelLocked = false;
+let pointerStartX = 0;
+let pointerStartScroll = 0;
+let tunerDragging = false;
+let suppressTrackClick = false;
 
-const mapReady = Promise.resolve()
-  .then(() => initMap(map))
-  .then(() => true)
-  .catch((error) => {
-    console.error("Map initialization failed.", error);
-    const status = map.querySelector(".map-loading") || document.createElement("p");
-    status.className = "map-loading";
-    status.textContent = "Map unavailable — voice and quick actions still work.";
-    map.replaceChildren(status);
-    return false;
+const rig = createPerformerRig(rigContainer, { getAudioLevel });
+
+for (let index = 0; index < 48; index += 1) {
+  const bar = document.createElement("i");
+  const height = 0.16 + ((Math.sin(index * 1.71) + 1) / 2) * 0.74;
+  bar.style.setProperty("--h", height.toFixed(2));
+  bar.style.setProperty("--delay", `${-(index % 9) * 47}ms`);
+  visualizer.append(bar);
+}
+
+function showToast(message) {
+  window.clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.classList.add("visible");
+  toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2200);
+}
+
+function formatDistance(meters) {
+  const miles = meters / 1609.344;
+  if (miles >= 0.1) return `${miles.toFixed(1)} mi`;
+  return `${Math.max(0, Math.round((meters * 3.28084) / 10) * 10)} ft`;
+}
+
+function syncNavigationState(state) {
+  navigationState = state;
+  const labels = {
+    preview: ["Route preview", "Start walking"],
+    running: ["Walking to Sutro", "Pause"],
+    paused: ["Navigation paused", "Resume"],
+    arrived: ["You have arrived", "Walk again"],
+  };
+  const [status, action] = labels[state] ?? labels.preview;
+  navigationStatus.textContent = status;
+  navigationPrimary.textContent = action;
+}
+
+function syncManeuver(maneuver = "straight") {
+  const paths = {
+    straight: "M16 27V5m-7 7 7-7 7 7",
+    left: "M26 25V14a5 5 0 0 0-5-5H9m5-5-5 5 5 5",
+    right: "M6 25V14a5 5 0 0 1 5-5h12m-5-5 5 5-5 5",
+    arrive: "M9 27V5m0 2h13l-3 5 3 5H9",
+  };
+  turnPath.setAttribute("d", paths[maneuver] ?? paths.straight);
+}
+
+function showPlace(place, { focus = true } = {}) {
+  if (!place) return;
+  selectedPlaceId = place.id;
+  mapPlaceCategory.textContent = place.category;
+  mapPlaceName.textContent = place.name;
+  mapPlaceDescription.textContent = place.shortDescription ?? "Festival destination";
+  mapPlaceCard.hidden = false;
+  mapSearchResults.hidden = true;
+  if (focus) focusPlace(place.id);
+}
+
+function renderPlaceResults(query = "") {
+  const matches = searchPlaces(query).slice(0, 8);
+  mapSearchResults.replaceChildren();
+  for (const place of matches) {
+    const button = document.createElement("button");
+    button.className = "map-search-result";
+    button.type = "button";
+    button.setAttribute("role", "option");
+    const icon = document.createElement("i");
+    icon.textContent = place.category === "stage" ? "S" : place.category.slice(0, 1).toUpperCase();
+    const copy = document.createElement("span");
+    const name = document.createElement("strong");
+    name.textContent = place.name;
+    const category = document.createElement("small");
+    category.textContent = place.category;
+    copy.append(name, category);
+    button.append(icon, copy);
+    button.addEventListener("click", () => showPlace(place));
+    mapSearchResults.append(button);
+  }
+  mapSearchResults.hidden = matches.length === 0;
+}
+
+function updatePlaybackUi(playing) {
+  performanceActive = playing;
+  app.dataset.playing = String(playing);
+  app.classList.toggle("mode-performing", playing);
+  app.classList.toggle("mode-idle", !playing);
+  avatar.dataset.state = playing ? "performing" : "idle";
+  rig.setPerforming(playing);
+
+  trackButtons.forEach((button, index) => {
+    const title = tracks[index].title;
+    const active = playing && index === selectedTrack;
+    button.classList.toggle("playing", active);
+    button.setAttribute("aria-label", active ? `Pause ${title}` : `Play ${title}`);
+  });
+}
+
+function updateTrackUi(index) {
+  selectedTrack = (index + tracks.length) % tracks.length;
+  app.dataset.emotion = ["confident", "playful", "intense", "euphoric"][selectedTrack];
+  rig.setTrack(selectedTrack);
+  trackList.setAttribute("aria-activedescendant", `track-${selectedTrack}`);
+
+  trackButtons.forEach((button, buttonIndex) => {
+    const selected = buttonIndex === selectedTrack;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-selected", String(selected));
+  });
+}
+
+function centerTrack(index, behavior = "smooth") {
+  const button = trackButtons[index];
+  if (!button) return;
+  const motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : behavior;
+  const target = button.offsetLeft - (trackList.clientWidth - button.offsetWidth) / 2;
+  tunerSyncing = true;
+  trackList.scrollTo({ left: target, behavior: motion });
+  window.clearTimeout(tunerSyncTimer);
+  // Release after smooth scrolling actually goes quiet. The longer fallback
+  // covers browsers that do not emit a final scroll event.
+  tunerSyncTimer = window.setTimeout(() => {
+    tunerSyncing = false;
+  }, motion === "smooth" ? 900 : 40);
+}
+
+function nearestTunerTrack() {
+  const center = trackList.scrollLeft + trackList.clientWidth / 2;
+  return trackButtons.reduce((closestIndex, button, index) => {
+    const buttonCenter = button.offsetLeft + button.offsetWidth / 2;
+    const closestButton = trackButtons[closestIndex];
+    const closestCenter = closestButton.offsetLeft + closestButton.offsetWidth / 2;
+    return Math.abs(buttonCenter - center) < Math.abs(closestCenter - center) ? index : closestIndex;
+  }, 0);
+}
+
+function onMusicPulse({ step, vocal, word }) {
+  rig.setVocal(vocal, word, step);
+  lyric.textContent = "";
+}
+
+function nextAvailableTrack(fromIndex) {
+  for (let offset = 1; offset <= tracks.length; offset += 1) {
+    const candidate = (fromIndex + offset) % tracks.length;
+    if (hasTrackSource(candidate)) return candidate;
+  }
+  return (fromIndex + 1) % tracks.length;
+}
+
+async function startPerformance() {
+  const generation = ++playbackGeneration;
+  const playingTrack = selectedTrack;
+  updatePlaybackUi(true);
+
+  let started;
+  try {
+    started = await startTrack(selectedTrack, onMusicPulse, () => {
+      if (generation !== playbackGeneration) return;
+      const nextTrack = nextAvailableTrack(playingTrack);
+      updateTrackUi(nextTrack);
+      centerTrack(selectedTrack);
+      startPerformance();
+    });
+  } catch (error) {
+    if (generation !== playbackGeneration) return;
+    showToast("Audio is unavailable, but the performance continues.");
+    return;
+  }
+
+  if (generation !== playbackGeneration) return;
+  if (!started?.ok) showToast("Performance active while audio reconnects.");
+}
+
+function stopPerformance() {
+  playbackGeneration += 1;
+  stopTrack();
+  rig.setVocal(false);
+  lyric.textContent = "";
+  updatePlaybackUi(false);
+}
+
+async function chooseTrack(index, start = true) {
+  const nextTrack = (index + tracks.length) % tracks.length;
+  const changed = selectedTrack !== nextTrack;
+  updateTrackUi(index);
+  centerTrack(selectedTrack);
+  if (!start) return;
+  // Scroll-settle and keyboard synchronization can select the already-active
+  // track. Only requestTrack handles an intentional same-track pause; these
+  // synchronization events must not kill or restart the performance.
+  if (!changed && performanceActive) return;
+  await startPerformance();
+}
+
+function requestTrack(index, { toggleActive = true } = {}) {
+  const nextTrack = (index + tracks.length) % tracks.length;
+  if (nextTrack === selectedTrack && performanceActive && toggleActive) {
+    stopPerformance();
+    return;
+  }
+  chooseTrack(nextTrack, true);
+}
+
+trackButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (suppressTrackClick) return;
+    const index = Number(button.dataset.track);
+    requestTrack(index);
   });
 
-function enableVoice() {
-  if (!voiceReady) {
-    voiceReady = initVoice()
-      .catch((error) => console.warn("Using browser speech fallback.", error))
-      .finally(() => { wake.hidden = true; });
+  button.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const nextIndex = (Number(button.dataset.track) + direction + tracks.length) % tracks.length;
+    trackButtons[nextIndex].focus();
+    requestTrack(nextIndex, { toggleActive: false });
+  });
+});
+
+trackList.addEventListener("keydown", (event) => {
+  if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+  event.preventDefault();
+  const direction = event.key === "ArrowRight" ? 1 : -1;
+  requestTrack(selectedTrack + direction, { toggleActive: false });
+});
+
+trackList.addEventListener("wheel", (event) => {
+  if (Math.abs(event.deltaX) < 1 && Math.abs(event.deltaY) < 1) return;
+  event.preventDefault();
+  if (wheelLocked) return;
+  wheelLocked = true;
+  const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+  requestTrack(selectedTrack + (delta > 0 ? 1 : -1), { toggleActive: false });
+  window.setTimeout(() => {
+    wheelLocked = false;
+  }, 260);
+}, { passive: false });
+
+trackList.addEventListener("scroll", () => {
+  if (tunerSyncing) {
+    window.clearTimeout(tunerSyncTimer);
+    tunerSyncTimer = window.setTimeout(() => {
+      tunerSyncing = false;
+    }, 140);
+    return;
   }
-  return voiceReady;
+  if (tunerDragging) return;
+  window.clearTimeout(tunerSettleTimer);
+  tunerSettleTimer = window.setTimeout(() => {
+    const nextTrack = nearestTunerTrack();
+    if (nextTrack !== selectedTrack) requestTrack(nextTrack, { toggleActive: false });
+    else centerTrack(selectedTrack);
+  }, 110);
+}, { passive: true });
+
+trackList.addEventListener("pointerdown", (event) => {
+  if (event.pointerType === "touch") return;
+  pointerStartX = event.clientX;
+  pointerStartScroll = trackList.scrollLeft;
+  tunerDragging = true;
+  suppressTrackClick = false;
+  trackList.setPointerCapture(event.pointerId);
+});
+
+trackList.addEventListener("pointermove", (event) => {
+  if (!tunerDragging || event.pointerType === "touch") return;
+  const delta = event.clientX - pointerStartX;
+  if (Math.abs(delta) > 4) suppressTrackClick = true;
+  trackList.scrollLeft = pointerStartScroll - delta;
+});
+
+function finishTunerDrag(event) {
+  if (!tunerDragging) return;
+  tunerDragging = false;
+  if (trackList.hasPointerCapture(event.pointerId)) trackList.releasePointerCapture(event.pointerId);
+  // A simple tap will immediately dispatch the option's click event. Let that
+  // single event own playback toggling; snapping here as well starts and then
+  // instantly pauses the same track.
+  if (!suppressTrackClick) return;
+  const nextTrack = nearestTunerTrack();
+  if (nextTrack !== selectedTrack) requestTrack(nextTrack, { toggleActive: false });
+  else centerTrack(selectedTrack);
+  window.setTimeout(() => {
+    suppressTrackClick = false;
+  }, 0);
 }
 
-function renderCard(kicker, message) {
-  const title = document.createElement("p");
-  title.className = "card-kicker";
-  title.textContent = kicker;
-  const body = document.createElement("p");
-  body.textContent = message;
-  card.replaceChildren(title, body);
-}
+trackList.addEventListener("pointerup", finishTunerDrag);
+trackList.addEventListener("pointercancel", finishTunerDrag);
 
-function browserSpeak(text) {
-  if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) {
-    setState("idle");
-    return Promise.resolve();
-  }
+async function showView(view) {
+  const target = ["home", "map", "shows"].includes(view) ? view : "home";
+  if (target !== "map" && navigationState === "running") toggleNavigation();
+  app.dataset.view = target;
+  mapView.hidden = target !== "map";
+  showsView.hidden = target !== "shows";
 
-  return new Promise((resolve) => {
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      setState("idle");
-      resolve();
-    };
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onend = utterance.onerror = finish;
-    window.speechSynthesis.cancel();
-    setState("speaking");
+  navButtons.forEach((button) => {
+    const selected = button.dataset.viewTarget === target;
+    button.classList.toggle("selected", selected);
+    if (selected) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+
+  if (target === "map") {
+    navigationPrimary.disabled = true;
+    navigationRestart.disabled = true;
     try {
-      window.speechSynthesis.speak(utterance);
+      mapError.hidden = true;
+      mapReady ??= initMap(mapContainer);
+      await mapReady;
+      navigationPrimary.disabled = false;
+      navigationRestart.disabled = false;
     } catch (error) {
-      console.warn("Browser speech failed.", error);
-      finish();
+      mapReady = null;
+      mapError.hidden = false;
+      showToast(error instanceof Error ? error.message : "The navigation map could not load.");
     }
+  }
+}
+
+viewButtons.forEach((button) => {
+  button.addEventListener("click", () => showView(button.dataset.viewTarget));
+});
+
+navigationPrimary.addEventListener("click", () => {
+  if (navigationState === "preview" || navigationState === "arrived") startNavigation();
+  else toggleNavigation();
+});
+
+navigationRestart.addEventListener("click", () => {
+  restartNavigation();
+  navigationPrimary.disabled = false;
+});
+
+mapRetry.addEventListener("click", async () => {
+  mapError.hidden = true;
+  navigationPrimary.disabled = true;
+  navigationRestart.disabled = true;
+  try {
+    destroyMap();
+    mapReady = initMap(mapContainer);
+    await mapReady;
+    navigationPrimary.disabled = false;
+    navigationRestart.disabled = false;
+  } catch (error) {
+    mapReady = null;
+    mapError.hidden = false;
+    showToast(error instanceof Error ? error.message : "The navigation map could not load.");
+  }
+});
+
+mapSearch.addEventListener("input", () => renderPlaceResults(mapSearch.value));
+mapSearch.addEventListener("focus", () => renderPlaceResults(mapSearch.value));
+
+mapCategoryChips.forEach((chip) => {
+  chip.addEventListener("click", () => {
+    const category = chip.dataset.mapCategory;
+    mapCategoryChips.forEach((candidate) => {
+      const selected = candidate === chip;
+      candidate.classList.toggle("selected", selected);
+      candidate.setAttribute("aria-pressed", String(selected));
+    });
+    setCategoryFilter(category);
+    renderPlaceResults(category === "all" ? "" : category);
   });
-}
-
-async function say(text) {
-  if (!globalThis.CASABLANCAS_CONFIG?.apiBase) return browserSpeak(text);
-  if (!(await speak(text))) return browserSpeak(text);
-}
-
-function walkLabel(minutes) {
-  return Number.isFinite(minutes)
-    ? `${minutes} minute${minutes === 1 ? "" : "s"}`
-    : "a short walk";
-}
-
-async function drawRoute(destination) {
-  if (!(await mapReady)) return null;
-
-  try {
-    const result = route(location, destination);
-    return result && Number.isFinite(result.minutes) ? result : null;
-  } catch (error) {
-    console.warn(`Could not draw a route to ${destination}.`, error);
-    return null;
-  }
-}
-
-async function directions(destination, label, kind = "Route") {
-  const origin = location;
-  const result = await drawRoute(destination);
-  if (!result) {
-    const fallback = `I can't draw a route to ${label} right now.`;
-    renderCard(`${kind} · Route unavailable`, fallback);
-    return say(fallback);
-  }
-  location = destination;
-  const walk = walkLabel(result.minutes);
-  const speech = `${label} is ${walk} away. Follow the glowing line.`;
-  renderCard(`${kind} · ${walk}`, `${origin.replaceAll("-", " ")} → ${label}`);
-  await say(speech);
-}
-
-async function stage() {
-  const origin = location;
-  const result = await drawRoute("lands-end");
-  if (!result) {
-    const fallback = "The Strokes are at Lands End Stage, but I can't draw the route right now.";
-    renderCard("Lands End · Route unavailable", fallback);
-    await say(fallback);
-    return sing();
-  }
-  location = "lands-end";
-  const walk = walkLabel(result.minutes);
-  const speech = `The Strokes are at Lands End Stage, ${walk} away. Follow the glowing line.`;
-  renderCard(`${origin.replaceAll("-", " ")} → Lands End · ${walk}`, "The Strokes · Saturday · Lands End Stage");
-  await say(speech);
-  await sing();
-}
-
-async function amenity(type, label) {
-  if (!(await mapReady)) {
-    const fallback = `I can't place the nearest ${label.toLowerCase()} on the map right now.`;
-    renderCard(`${label} · Map unavailable`, fallback);
-    return say(fallback);
-  }
-
-  const found = nearest(type, location);
-  const destination = typeof found === "string" ? found : found?.id;
-  if (!destination) {
-    const fallback = `I couldn't find a nearby ${label.toLowerCase()}.`;
-    renderCard(`${label} · Unavailable`, fallback);
-    return say(fallback);
-  }
-  return directions(destination, found?.label || label, label);
-}
-
-function safeTicketUrl(value) {
-  try {
-    const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
-  } catch {
-    return null;
-  }
-}
-
-async function showNextShow() {
-  let show;
-  try {
-    show = await nextShow("The Strokes");
-  } catch (error) {
-    console.error(error);
-  }
-
-  if (!show) {
-    const fallback = "I can't load the next Strokes show right now. Please try again shortly.";
-    renderCard("The Strokes · Next show", fallback);
-    return say(fallback);
-  }
-
-  const provider = show.provider || "official ticket seller";
-  const details = [show.date, show.venue, show.city].filter(Boolean).join(" · ");
-  const speech = `The Strokes' next show is ${show.date || "coming up"} at ${show.venue || "the listed venue"} in ${show.city || "the listed city"}.`;
-  renderCard(`${show.artist || "The Strokes"} · Next show`, details || "See the official listing for details.");
-
-  const ticketUrl = safeTicketUrl(show.ticketUrl);
-  if (ticketUrl) {
-    const link = document.createElement("a");
-    link.href = ticketUrl;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = `Official tickets via ${provider}`;
-    card.append(link);
-  }
-
-  const source = document.createElement("p");
-  source.className = "card-meta";
-  source.textContent = `Ticket provider: ${provider} · Source: JamBase`;
-  card.append(source);
-  await say(speech);
-}
-
-const intents = [
-  [/\b(?:when|next[\s-]+show)\b/i, showNextShow],
-  [/\b(?:stage|strokes|lands[\s-]+end)\b/i, stage],
-  [/\b(?:bathroom|restroom|toilet)\b/i, () => amenity("restroom", "Restroom")],
-  [/\bwater\b/i, () => amenity("water", "Water")],
-  [/\bmerch(?:andise)?\b/i, () => amenity("merch", "Merch")],
-  [/\b(?:leave|exit)\b/i, () => amenity("exit", "Exit")],
-];
-
-async function handle(rawText) {
-  if (busy) return;
-  const text = rawText?.trim();
-  if (!text) return;
-  busy = true;
-  input.value = "";
-  [send, mic, ...quickActions].forEach((control) => { control.disabled = true; });
-  card.ariaBusy = "true";
-
-  try {
-    await enableVoice();
-    const local = intents.find(([pattern]) => pattern.test(text));
-    if (local) return await local[1]();
-
-    const answer = await ask(text);
-    const result = answer.dest ? await drawRoute(answer.dest) : null;
-    if (answer.dest && !result) {
-      const fallback = "I found the destination, but I can't draw that route right now.";
-      renderCard("Festival guide · Route unavailable", fallback);
-      return await say(fallback);
-    }
-    if (result) location = answer.dest;
-    const walk = result ? ` · ${result.minutes} min` : "";
-    renderCard(`Festival guide${walk}`, answer.speech);
-    await say(answer.speech);
-  } catch (error) {
-    console.error(error);
-    const fallback = "I lost the guide signal, but the destination buttons and map still work.";
-    renderCard("Still here", fallback);
-    await browserSpeak(fallback);
-  } finally {
-    busy = false;
-    [send, mic, ...quickActions].forEach((control) => { control.disabled = false; });
-    card.removeAttribute("aria-busy");
-  }
-}
-
-wake.addEventListener("click", enableVoice);
-send.addEventListener("click", () => handle(input.value));
-input.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") handle(input.value);
 });
-mic.addEventListener("click", async () => {
-  await enableVoice();
-  startMic(handle);
+
+mapPlaceClose.addEventListener("click", () => {
+  selectedPlaceId = null;
+  mapPlaceCard.hidden = true;
 });
-quickActions.forEach((button) => {
-  button.addEventListener("click", () => handle(button.dataset.dest));
+
+mapPlaceNavigate.addEventListener("click", () => {
+  if (!selectedPlaceId) return;
+  const place = navigateToPlace(selectedPlaceId);
+  if (!place) return;
+  navigationStatus.textContent = "Navigating to";
+  routeHeading.textContent = place.name;
+  routeCopy.textContent = place.shortDescription ?? "Follow the highlighted route.";
+  navigationPrimary.textContent = "Route shown";
+  navigationPrimary.disabled = true;
+  mapPlaceCard.hidden = true;
 });
+
+mapContainer.addEventListener("placeselected", (event) => showPlace(event.detail, { focus: false }));
+
+mapContainer.addEventListener("navigationframe", (event) => {
+  const frame = event.detail;
+  routeHeading.textContent = frame.instruction?.title ?? "Continue to Sutro Stage";
+  routeCopy.textContent = frame.instruction?.detail
+    ?? frame.instruction?.instruction
+    ?? frame.instruction?.text
+    ?? frame.instruction
+    ?? "Continue toward Sutro Stage.";
+  syncManeuver(frame.instruction?.maneuver);
+  routeTime.textContent = `${Math.max(1, frame.etaMinutes)} min`;
+  routeDistance.textContent = formatDistance(frame.remainingDistanceMeters);
+});
+
+mapContainer.addEventListener("navigationstate", (event) => {
+  const state = event.detail?.state ?? "preview";
+  syncNavigationState(state);
+  if (state === "arrived") {
+    routeHeading.textContent = "Sutro Stage is ahead";
+    routeCopy.textContent = "You made it. The stage entrance is directly ahead.";
+    routeTime.textContent = "Arrived";
+    routeDistance.textContent = "0 ft";
+    syncManeuver("arrive");
+  } else if (state === "preview") {
+    routeHeading.textContent = "Head northeast";
+    routeCopy.textContent = "Follow the Polo Field path toward Sutro Stage.";
+    syncManeuver("straight");
+  }
+});
+
+mapContainer.addEventListener("navigationerror", (event) => {
+  mapError.hidden = false;
+  showToast(event.detail?.message ?? "The navigation map could not load.");
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && performanceActive) stopPerformance();
+});
+
+window.addEventListener("beforeunload", () => {
+  stopPerformance();
+  destroyMap();
+  rig.destroy();
+});
+
+updateTrackUi(0);
+updatePlaybackUi(false);
+syncNavigationState("preview");
+prepareTrackSources();
+window.requestAnimationFrame(() => centerTrack(0, "auto"));
