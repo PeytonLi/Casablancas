@@ -2,3 +2,12 @@
 .env.local
 node_modules/
 .convex/
+.worktrees/
+.next/
+.vinext/
+dist/
+.wrangler/
+public/experience/
+public/src/
+public/data/
+public/assets/

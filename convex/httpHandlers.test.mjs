@@ -111,17 +111,18 @@ test("handleAsk rejects a malformed body with CORS intact", async () => {
   assert.deepEqual(await response.json(), { error: "text is required" });
 });
 
-test("handleTts returns OpenAI MP3 bytes with the frozen content type", async () => {
+test("handleTts returns ElevenLabs MP3 bytes with the configured voice", async () => {
   const mp3 = new Uint8Array([0x49, 0x44, 0x33, 0x04, 0x00]);
   let captured;
   const response = await handleTts(
     new Request("https://demo.convex.site/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: "Lands End is five minutes away." }),
+      body: JSON.stringify({ text: "The Strokes are playing at Lands End right now." }),
     }),
     {
       apiKey: "server-key",
+      voiceId: "voice-123",
       fetchImpl: async (url, options) => {
         captured = { url, options };
         return new Response(mp3, {
@@ -132,16 +133,15 @@ test("handleTts returns OpenAI MP3 bytes with the frozen content type", async ()
     },
   );
 
-  assert.equal(captured.url, "https://api.openai.com/v1/audio/speech");
-  assert.equal(captured.options.headers.Authorization, "Bearer server-key");
+  assert.equal(
+    captured.url,
+    "https://api.elevenlabs.io/v1/text-to-speech/voice-123?output_format=mp3_44100_128",
+  );
+  assert.equal(captured.options.headers["xi-api-key"], "server-key");
+  assert.equal(captured.options.headers.Accept, "audio/mpeg");
   assert.deepEqual(JSON.parse(captured.options.body), {
-    model: "gpt-4o-mini-tts",
-    voice: "cedar",
-    input: "Lands End is five minutes away.",
-    response_format: "mp3",
-    speed: 0.93,
-    instructions:
-      "Use a warm, clear, generic speaking voice. Do not imitate or impersonate any real person.",
+    text: "The Strokes are playing at Lands End right now.",
+    model_id: "eleven_flash_v2_5",
   });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("Content-Type"), "audio/mpeg");
@@ -149,14 +149,14 @@ test("handleTts returns OpenAI MP3 bytes with the frozen content type", async ()
   assert.deepEqual(new Uint8Array(await response.arrayBuffer()), mp3);
 });
 
-test("handleTts reports missing server credentials without exposing details", async () => {
+test("handleTts reports missing ElevenLabs configuration without exposing details", async () => {
   const response = await handleTts(
     new Request("https://demo.convex.site/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: "Hello" }),
     }),
-    { apiKey: "", fetchImpl: fetch },
+    { apiKey: "", voiceId: "", fetchImpl: fetch },
   );
 
   assert.equal(response.status, 503);
@@ -164,6 +164,29 @@ test("handleTts reports missing server credentials without exposing details", as
   assert.deepEqual(await response.json(), {
     error: "Voice is not configured yet",
   });
+});
+
+test("handleTts refuses arbitrary paid synthesis", async () => {
+  let calls = 0;
+  const response = await handleTts(
+    new Request("https://demo.convex.site/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "Read this expensive arbitrary paragraph." }),
+    }),
+    {
+      apiKey: "server-key",
+      voiceId: "voice-123",
+      fetchImpl: async () => {
+        calls += 1;
+        return new Response();
+      },
+    },
+  );
+
+  assert.equal(response.status, 400);
+  assert.equal(calls, 0);
+  assert.deepEqual(await response.json(), { error: "Unsupported phrase" });
 });
 
 test("handleNextShow ensures and reads the demo show from Convex dependencies", async () => {

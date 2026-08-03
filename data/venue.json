@@ -1,0 +1,48 @@
+{
+  "points": {
+    "south-gate": {
+      "x": 511,
+      "y": 531,
+      "type": "gate",
+      "label": "South Gate"
+    },
+    "lands-end": {
+      "x": 373,
+      "y": 447,
+      "type": "stage",
+      "label": "Lands End Stage"
+    },
+    "water-1": {
+      "x": 489,
+      "y": 476,
+      "type": "water",
+      "label": "Water"
+    },
+    "restroom-1": {
+      "x": 550,
+      "y": 417,
+      "type": "restroom",
+      "label": "Restroom"
+    },
+    "merch-1": {
+      "x": 402,
+      "y": 353,
+      "type": "merch",
+      "label": "Merch"
+    },
+    "exit-1": {
+      "x": 455,
+      "y": 534,
+      "type": "exit",
+      "label": "South VIP Exit"
+    }
+  },
+  "edges": [
+    ["south-gate", "water-1"],
+    ["water-1", "lands-end"],
+    ["water-1", "restroom-1"],
+    ["lands-end", "merch-1"],
+    ["south-gate", "exit-1"]
+  ],
+  "walk_seconds_per_unit": 1.8
+}
