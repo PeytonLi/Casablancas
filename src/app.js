@@ -23,6 +23,7 @@ import {
 } from "./music.js?v=radio-catalog-1";
 import { createPerformerRig } from "./performer-rig.js";
 import { initShowsView } from "./shows.js";
+import { OFFICIAL_PREVIEW } from "./official-preview.js";
 
 const tracks = getTracks();
 const app = document.querySelector("#app");
@@ -76,6 +77,10 @@ const askCharleySheet = document.querySelector("#ask-charley-sheet");
 const askCharleyClose = document.querySelector("#ask-charley-close");
 const askCharleyQuestions = [...document.querySelectorAll("[data-charlie-question]")];
 const askCharleyStatus = document.querySelector("#ask-charley-status");
+const officialPreviewButton = document.querySelector("#official-360-preview");
+const officialPreviewAudio = new Audio(OFFICIAL_PREVIEW.previewUrl);
+officialPreviewAudio.preload = "none";
+officialPreviewAudio.volume = 0.82;
 
 let selectedTrack = 0;
 let performanceActive = false;
@@ -88,6 +93,7 @@ let activeDestinationId = null;
 let tunerSettleTimer;
 let tunerSyncTimer;
 let tunerSyncing = false;
+let officialPreviewTimer;
 let wheelLocked = false;
 let pointerStartX = 0;
 let pointerStartScroll = 0;
@@ -173,6 +179,8 @@ function showDestinationRoute(place, description) {
 async function openAskCharley() {
   await showView("home");
   resetMapInterface();
+  stopOfficialPreview();
+  stopPerformance();
   askCharleySheet.hidden = false;
   askCharleyOpen.setAttribute("aria-expanded", "true");
   askCharleyStatus.textContent = CHARLIE_GREETING;
@@ -317,8 +325,45 @@ function nextAvailableTrack(fromIndex) {
   return (fromIndex + 1) % tracks.length;
 }
 
+function updateOfficialPreviewUi(playing) {
+  officialPreviewButton.setAttribute("aria-pressed", String(playing));
+  officialPreviewButton.setAttribute(
+    "aria-label",
+    playing
+      ? "Pause the official preview of 360 by Charli xcx"
+      : "Play an official preview of 360 by Charli xcx",
+  );
+  officialPreviewButton.querySelector("small").textContent = playing ? "Playing preview" : "Official preview";
+}
+
+function stopOfficialPreview() {
+  window.clearTimeout(officialPreviewTimer);
+  officialPreviewAudio.pause();
+  officialPreviewAudio.currentTime = 0;
+  updateOfficialPreviewUi(false);
+}
+
+async function toggleOfficialPreview() {
+  if (!officialPreviewAudio.paused) {
+    stopOfficialPreview();
+    return;
+  }
+
+  stopPerformance();
+  officialPreviewAudio.currentTime = 0;
+  try {
+    await officialPreviewAudio.play();
+    updateOfficialPreviewUi(true);
+    officialPreviewTimer = window.setTimeout(stopOfficialPreview, OFFICIAL_PREVIEW.durationMs);
+  } catch {
+    stopOfficialPreview();
+    showToast("The official preview could not play. Try again.");
+  }
+}
+
 async function startPerformance() {
   if (app.dataset.view !== "home") return;
+  stopOfficialPreview();
   const generation = ++playbackGeneration;
   const playingTrack = selectedTrack;
   updatePlaybackUi(true);
@@ -466,6 +511,7 @@ trackList.addEventListener("pointercancel", finishTunerDrag);
 
 async function showView(view) {
   const target = ["home", "map", "shows"].includes(view) ? view : "home";
+  if (target !== "home") stopOfficialPreview();
   if (target !== "home") stopPerformance();
   if (target !== "home" && !askCharleySheet.hidden) closeAskCharley();
   if (target !== "map" && navigationState === "running") toggleNavigation();
@@ -502,6 +548,15 @@ async function showView(view) {
 
 viewButtons.forEach((button) => {
   button.addEventListener("click", () => showView(button.dataset.viewTarget));
+});
+
+officialPreviewButton.addEventListener("click", toggleOfficialPreview);
+officialPreviewAudio.addEventListener("ended", stopOfficialPreview);
+officialPreviewAudio.addEventListener("error", () => {
+  if (officialPreviewButton.getAttribute("aria-pressed") === "true") {
+    stopOfficialPreview();
+    showToast("The official preview could not play. Try again.");
+  }
 });
 
 showsView.addEventListener("showroute", async (event) => {
@@ -656,10 +711,13 @@ mapContainer.addEventListener("navigationerror", (event) => {
 });
 
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden && performanceActive) stopPerformance();
+  if (!document.hidden) return;
+  if (performanceActive) stopPerformance();
+  stopOfficialPreview();
 });
 
 window.addEventListener("beforeunload", () => {
+  stopOfficialPreview();
   stopPerformance();
   showsController.destroy();
   destroyMap();
@@ -668,6 +726,7 @@ window.addEventListener("beforeunload", () => {
 
 updateTrackUi(0);
 updatePlaybackUi(false);
+updateOfficialPreviewUi(false);
 syncNavigationState("preview");
 prepareTrackSources();
 window.requestAnimationFrame(() => centerTrack(0, "auto"));

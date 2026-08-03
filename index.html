@@ -43,6 +43,16 @@
         </div>
         <div class="stage-platform" aria-hidden="true"></div>
         <div id="lyric" class="performance-lyric" aria-live="polite"></div>
+        <button
+          id="official-360-preview"
+          class="official-preview"
+          type="button"
+          aria-pressed="false"
+          aria-label="Play an official preview of 360 by Charli xcx"
+        >
+          <span class="official-preview-icon" aria-hidden="true">▶</span>
+          <span><small>Official preview</small><strong>360 · Charli xcx</strong></span>
+        </button>
       </section>
 
       <div id="visualizer" class="signal-strip" aria-label="Audio waveform"></div>
@@ -101,7 +111,7 @@
             <h2 id="route-heading">Head northeast</h2>
             <p id="route-copy">Follow the Polo Field path toward Sutro Stage.</p>
           </div>
-          <button class="view-close map-close" type="button" data-view-target="home" aria-label="Close navigation">×</button>
+          <button id="map-close" class="view-close map-close" type="button" data-view-target="home" aria-label="Close navigation and return home">×</button>
         </div>
         <article id="map-place-card" class="map-place-card" hidden>
           <button id="map-place-close" class="map-place-close" type="button" aria-label="Close place details">×</button>
@@ -170,6 +180,6 @@
     </main>
 
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="/src/app.js?v=route-control-1"></script>
+    <script type="module" src="/src/app.js?v=official-preview-1"></script>
   </body>
 </html>

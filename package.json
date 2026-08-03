@@ -11,7 +11,7 @@
     "render:media": "node tools/render-performances.mjs",
     "refresh:schedule": "node tools/pull-outside-lands.mjs",
     "test": "node --test tests/*.test.mjs convex/*.test.mjs tools/*.test.mjs",
-    "check": "node --check src/app.js && node --check src/avatar.js && node --check src/map.js && node --check src/music.js && node --check src/performer-rig.js && node --check src/voice.js && node --check src/show-planner.js && node --check src/shows.js && node --check data/outside-lands-2026.js && node --check tools/pull-outside-lands.mjs"
+    "check": "node --check src/app.js && node --check src/avatar.js && node --check src/map.js && node --check src/music.js && node --check src/official-preview.js && node --check src/performer-rig.js && node --check src/voice.js && node --check src/show-planner.js && node --check src/shows.js && node --check data/outside-lands-2026.js && node --check tools/pull-outside-lands.mjs"
   },
   "dependencies": {
     "convex": "^1.43.0"
