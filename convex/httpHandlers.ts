@@ -1,17 +1,26 @@
 import {
   CORS_HEADERS,
   buildAskRequestBody,
-  buildTtsRequestBody,
   extractOpenAIText,
   parseAskOutput,
 } from "./lib.ts";
 
 const RESPONSES_URL = "https://api.openai.com/v1/responses";
-const SPEECH_URL = "https://api.openai.com/v1/audio/speech";
+const SPEECH_URL = "https://api.elevenlabs.io/v1/text-to-speech";
 const FESTIVAL_TIME_ZONE = "America/Los_Angeles";
+const APPROVED_TTS_PHRASES = new Set([
+  "Lands End is five minutes away.",
+  "Follow the glowing line to Lands End. It is about five minutes away.",
+  "The nearest water station is along the route.",
+  "The nearest restroom is marked beside the route.",
+  "The merch stand is just beyond Lands End.",
+  "The nearest exit is marked on the glowing route.",
+  "I can help with the stage, water, restrooms, merch, or the exit.",
+]);
 
 type OpenAIDependencies = {
   apiKey?: string;
+  voiceId?: string;
   fetchImpl?: typeof fetch;
 };
 
@@ -136,23 +145,30 @@ export async function handleAsk(
 
 export async function handleTts(
   request: Request,
-  { apiKey = "", fetchImpl = fetch }: OpenAIDependencies = {},
+  { apiKey = "", voiceId = "", fetchImpl = fetch }: OpenAIDependencies = {},
 ): Promise<Response> {
   const text = await requestText(request);
   if (!text) return jsonResponse({ error: "text is required" }, 400);
-  if (!apiKey) {
+  if (!apiKey || !voiceId) {
     return jsonResponse({ error: "Voice is not configured yet" }, 503);
+  }
+  if (!APPROVED_TTS_PHRASES.has(text)) {
+    return jsonResponse({ error: "Unsupported phrase" }, 400);
   }
 
   try {
-    const upstream = await fetchImpl(SPEECH_URL, {
+    const upstream = await fetchImpl(
+      `${SPEECH_URL}/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
+      {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "xi-api-key": apiKey,
+        Accept: "audio/mpeg",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(buildTtsRequestBody(text)),
-    });
+      body: JSON.stringify({ text, model_id: "eleven_flash_v2_5" }),
+      },
+    );
 
     if (!upstream.ok) {
       return jsonResponse({ error: "Voice is temporarily unavailable" }, 502);

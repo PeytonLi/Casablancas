@@ -12,6 +12,8 @@ import { preflightResponse } from "./lib";
 declare const process: {
   env: {
     OPENAI_API_KEY?: string;
+    ELEVENLABS_API_KEY?: string;
+    ELEVENLABS_VOICE_ID?: string;
   };
 };
 
@@ -40,7 +42,8 @@ http.route({
   method: "POST",
   handler: httpAction(async (_ctx, request) => {
     return await handleTts(request, {
-      apiKey: process.env.OPENAI_API_KEY ?? "",
+      apiKey: process.env.ELEVENLABS_API_KEY ?? "",
+      voiceId: process.env.ELEVENLABS_VOICE_ID ?? "",
     });
   }),
 });
