@@ -6,17 +6,23 @@ Place audio files you are licensed to use in this directory with these exact nam
 - `von-dutch.mp3`
 - `apple.mp3`
 - `club-classics.mp3`
+- `b2b.mp3`
+- `talk-talk.mp3`
+- `guess.mp3`
+- `365.mp3`
 
-Add the filenames you provide to `manifest.json`, for example:
+Add only the filenames you provide to the `files` list in `manifest.json`.
+The `optionalFiles` list records the complete supported catalog:
 
 ```json
 {
-  "files": ["360.mp3", "von-dutch.mp3", "apple.mp3", "club-classics.mp3"]
+  "files": ["360.mp3", "von-dutch.mp3"],
+  "optionalFiles": ["360.mp3", "von-dutch.mp3", "apple.mp3", "club-classics.mp3", "b2b.mp3", "talk-talk.mp3", "guess.mp3", "365.mp3"]
 }
 ```
 
 The player plays each file once, then advances to the next available song like a radio. It does not loop one song forever.
 
-If a file is missing, tapping that song opens the device audio picker. Selected files stay on the device for the current browser session and are never uploaded. MP3, M4A, AAC, WAV, OGG, Opus, and FLAC files are accepted when the browser supports them.
+If a file is missing, the player automatically uses its built-in original arrangement. It never opens an upload picker.
 
 This project intentionally does not download or bundle commercial recordings. Add only audio you have permission to use.

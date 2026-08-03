@@ -21,7 +21,7 @@
           </svg>
           <span>CASABLANCAS</span>
         </div>
-        <div class="artist-mode"><span></span>Artist mode</div>
+        <button id="ask-charley-open" class="ask-charley-open" type="button" aria-expanded="false" aria-controls="ask-charley-sheet">Ask Charlie</button>
       </header>
 
       <section id="avatar" class="performer-stage" aria-label="Digital pop performer">
@@ -55,20 +55,7 @@
           tabindex="0"
           aria-label="Swipe or use left and right arrows to tune between tracks"
           aria-activedescendant="track-0"
-        >
-          <button id="track-0" class="track-option selected" type="button" data-track="0" role="option" aria-selected="true">
-            <span>360</span>
-          </button>
-          <button id="track-1" class="track-option" type="button" data-track="1" role="option" aria-selected="false">
-            <span>Von dutch</span>
-          </button>
-          <button id="track-2" class="track-option" type="button" data-track="2" role="option" aria-selected="false">
-            <span>Apple</span>
-          </button>
-          <button id="track-3" class="track-option" type="button" data-track="3" role="option" aria-selected="false">
-            <span>Club classics</span>
-          </button>
-        </div>
+        ></div>
         <div class="tuner-needle" aria-hidden="true"><i></i></div>
       </section>
 
@@ -153,6 +140,21 @@
           <h3>Fresh from JamBase</h3>
           <p>Official show and ticket links will appear here when the live artist feed is connected.</p>
         </div>
+      </section>
+
+      <section id="ask-charley-sheet" class="ask-charley-sheet" hidden aria-label="Ask Charlie">
+        <div class="ask-charley-sheet-header">
+          <span>Ask Charlie</span>
+          <button id="ask-charley-close" class="ask-charley-close" type="button" aria-label="Close Ask Charlie">×</button>
+        </div>
+        <form id="ask-charley-form">
+          <label for="ask-charley-question">Ask Charlie a question</label>
+          <div class="ask-charley-controls">
+            <input id="ask-charley-question" name="question" type="text" autocomplete="off" placeholder="Ask about stages, food, or the festival" />
+            <button id="ask-charley-send" type="submit" disabled>Send</button>
+          </div>
+        </form>
+        <p id="ask-charley-status" aria-live="polite"></p>
       </section>
 
       <div id="toast" class="toast" role="status" aria-live="polite"></div>

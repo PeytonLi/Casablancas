@@ -8,6 +8,7 @@ import {
   FESTIVAL_PLACES,
 } from "../data/festival-places.js?v=festival-map-overlay-1";
 import { frameAt, prepareRoute } from "./navigation.js";
+import { createPerformerRig } from "./performer-rig.js";
 
 const MAP_STYLE = "https://tiles.openfreemap.org/styles/bright";
 const DEMO_DURATION_MS = 22_000;
@@ -66,6 +67,7 @@ const festivalPlaces = FESTIVAL_PLACES.map((place, index) => {
 let activeContainer = null;
 let map = null;
 let puckMarker = null;
+let puckRig = null;
 let placeMarkers = [];
 let animationFrame = 0;
 let animationStartedAt = 0;
@@ -154,7 +156,11 @@ function createPuckElement() {
   const puck = document.createElement("div");
   puck.className = "navigation-puck";
   puck.setAttribute("aria-label", "Charli navigation location");
-  puck.innerHTML = '<span class="navigation-puck-cone"></span><span class="navigation-puck-character"><img src="/public/charli-performer.png" alt="" /></span><span class="navigation-puck-anchor"></span>';
+  puck.innerHTML = '<span class="navigation-puck-cone"></span><span class="navigation-puck-character"></span><span class="navigation-puck-anchor"></span>';
+  const character = puck.querySelector(".navigation-puck-character");
+  puckRig?.destroy();
+  puckRig = createPerformerRig(character);
+  puckRig.setTrack(0);
   return puck;
 }
 
@@ -418,6 +424,7 @@ function frameCamera(frame, follow = true) {
 
 function setState(nextState) {
   state = nextState;
+  puckRig?.setPerforming(nextState === "running");
   dispatch("navigationstate", { state });
 }
 
@@ -617,6 +624,8 @@ export function destroyMap() {
   animationFrame = 0;
   if (visibilityHandler) document.removeEventListener("visibilitychange", visibilityHandler);
   visibilityHandler = null;
+  puckRig?.destroy();
+  puckRig = null;
   puckMarker?.remove();
   puckMarker = null;
   placeMarkers.forEach(({ marker }) => marker.remove());

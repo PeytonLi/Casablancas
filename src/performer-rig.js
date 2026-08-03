@@ -1,3 +1,5 @@
+import { createDanceMotion } from "./dance-motion.js";
+
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const TRACK_PROFILES = [
@@ -6,8 +8,6 @@ const TRACK_PROFILES = [
   { emotion: "intense", bpm: 124, brow: -3, eye: 0.82, smile: -0.25 },
   { emotion: "euphoric", bpm: 136, brow: 2.4, eye: 1.14, smile: 1 },
 ];
-
-const DANCE_MOVE_COUNT = 5;
 
 const RIG_MARKUP = `
   <svg class="rig-svg" viewBox="0 0 260 430" xmlns="${SVG_NS}" aria-hidden="true">
@@ -168,165 +168,13 @@ function smoothstep(value) {
   return clamped * clamped * (3 - 2 * clamped);
 }
 
-function baseDancePose(trackIndex, beat, half, hit) {
-  if (trackIndex === 1) {
-    return {
-      hip: Math.sin(half) * 5.2,
-      bounce: -hit * 5.5,
-      torso: Math.sin(half + 0.4) * 4.5,
-      head: Math.sin(beat + 0.2) * 4.8,
-      armLeft: -7 + Math.sin(beat) * 15,
-      armRight: 8 - Math.sin(beat + 0.5) * 15,
-      forearmLeft: 10 + Math.sin(half) * 18,
-      forearmRight: -10 - Math.sin(half + 0.4) * 18,
-      legLeft: Math.sin(half) * 4,
-      legRight: -Math.sin(half) * 4,
-    };
-  }
-
-  if (trackIndex === 2) {
-    return {
-      hip: Math.sin(beat) * 2.6,
-      bounce: -hit * 7,
-      torso: -4 + Math.sin(half) * 2.2,
-      head: Math.sin(beat) * 2.5,
-      armLeft: 9 + Math.sin(beat) * 7,
-      armRight: -9 - Math.sin(beat) * 7,
-      forearmLeft: -19 + hit * 12,
-      forearmRight: 19 - hit * 12,
-      legLeft: hit * 5,
-      legRight: (1 - hit) * -5,
-    };
-  }
-
-  if (trackIndex === 3) {
-    return {
-      hip: Math.sin(half) * 6.5,
-      bounce: -hit * 8,
-      torso: Math.sin(half) * 5,
-      head: Math.sin(half + 0.7) * 5.2,
-      armLeft: -28 + Math.sin(beat) * 12,
-      armRight: 28 - Math.sin(beat + 0.35) * 12,
-      forearmLeft: -18 + Math.cos(beat) * 16,
-      forearmRight: 18 - Math.cos(beat + 0.35) * 16,
-      legLeft: Math.sin(half) * 5,
-      legRight: -Math.sin(half) * 5,
-    };
-  }
-
-  return {
-    hip: Math.sin(half) * 4.2,
-    bounce: -hit * 3.5,
-    torso: Math.sin(half + 0.3) * 3,
-    head: Math.sin(beat + 0.5) * 2.8,
-    armLeft: 3 + Math.sin(half) * 8,
-    armRight: -3 - Math.sin(half + 0.4) * 8,
-    forearmLeft: Math.sin(beat) * 8,
-    forearmRight: -Math.sin(beat + 0.4) * 8,
-    legLeft: Math.sin(half) * 2.8,
-    legRight: -Math.sin(half) * 2.8,
-  };
-}
-
-function danceAccent(trackIndex, move, beat, half, hit) {
-  const wave = Math.sin(half);
-  const snap = Math.sin(beat);
-  const counter = Math.cos(half);
-  const punch = Math.cos(beat);
-  const accents = [
-    [
-      // 360 / confident: runway walk
-      { hip: wave * 5, bounce: -hit * 2, torso: -wave * 2, head: wave * 1.5, armLeft: -8 + snap * 7, armRight: 8 - snap * 7, forearmLeft: 12 + punch * 5, forearmRight: -12 - punch * 5, legLeft: wave * 7, legRight: -wave * 7 },
-      // Shoulder roll with hands held high
-      { hip: counter * 3, bounce: -hit * 3, torso: snap * 6, head: -snap * 4.5, armLeft: -27 + wave * 6, armRight: 27 - wave * 6, forearmLeft: -31 + snap * 8, forearmRight: 31 - snap * 8, legLeft: -counter * 4, legRight: counter * 4 },
-      // Low body roll
-      { hip: wave * 7, bounce: 2 - hit * 5, torso: -7 + counter * 5, head: 4 - counter * 3, armLeft: 18 + snap * 5, armRight: -18 - snap * 5, forearmLeft: -22 + wave * 10, forearmRight: 22 - wave * 10, legLeft: 5 + snap * 2, legRight: -5 - snap * 2 },
-      // Sharp power hits
-      { hip: snap * 4, bounce: -hit * 7, torso: snap * 8, head: -snap * 6, armLeft: -12 + punch * 20, armRight: 12 - punch * 20, forearmLeft: -35 + hit * 18, forearmRight: 35 - hit * 18, legLeft: snap * 6, legRight: -snap * 6 },
-      // Side point and hair-toss silhouette
-      { hip: counter * 6, bounce: -hit * 3, torso: -counter * 6, head: counter * 8, armLeft: -40 + snap * 8, armRight: 33 + snap * 5, forearmLeft: -28 + punch * 8, forearmRight: -36 - punch * 7, legLeft: counter * 7, legRight: -counter * 4 },
-    ],
-    [
-      // Von dutch / playful: alternating arm pumps
-      { hip: wave * 5, bounce: -hit * 4, torso: snap * 4, head: -snap * 6, armLeft: snap * 24, armRight: -snap * 24, forearmLeft: 19 - punch * 13, forearmRight: -19 + punch * 13, legLeft: wave * 6, legRight: -wave * 6 },
-      // Peekaboo face frame
-      { hip: counter * 4, bounce: -hit * 2, torso: -wave * 7, head: snap * 10, armLeft: -31 + snap * 6, armRight: 31 - snap * 6, forearmLeft: -48 + hit * 12, forearmRight: 48 - hit * 12, legLeft: -counter * 5, legRight: counter * 5 },
-      // Overhead bounce
-      { hip: snap * 3, bounce: -hit * 9, torso: -snap * 4, head: snap * 3, armLeft: -52 + wave * 8, armRight: 52 - wave * 8, forearmLeft: -23 + punch * 10, forearmRight: 23 - punch * 10, legLeft: snap * 7, legRight: -snap * 7 },
-      // Disco point
-      { hip: wave * 7, bounce: -hit * 3, torso: wave * 6, head: -wave * 7, armLeft: -9 + snap * 7, armRight: 48 + snap * 7, forearmLeft: 23 - punch * 8, forearmRight: -42 - punch * 7, legLeft: wave * 8, legRight: -wave * 4 },
-      // Skipping kick with open arms
-      { hip: counter * 5, bounce: -hit * 7, torso: counter * 5, head: -counter * 4, armLeft: -35 + snap * 14, armRight: 35 - snap * 14, forearmLeft: 24 + punch * 8, forearmRight: -24 - punch * 8, legLeft: 4 + hit * 7, legRight: -4 - hit * 7 },
-    ],
-    [
-      // Apple / intense: heavy stomp
-      { hip: snap * 3, bounce: -hit * 9, torso: -5 + punch * 3, head: -punch * 4, armLeft: 16 - hit * 10, armRight: -16 + hit * 10, forearmLeft: -28 + snap * 9, forearmRight: 28 - snap * 9, legLeft: hit * 9, legRight: -hit * 6 },
-      // Cross-body punches
-      { hip: wave * 4, bounce: -hit * 4, torso: snap * 9, head: -snap * 6, armLeft: -29 + punch * 14, armRight: 29 - punch * 14, forearmLeft: -46 + hit * 13, forearmRight: 46 - hit * 13, legLeft: -wave * 6, legRight: wave * 6 },
-      // Low crouched prowl
-      { hip: counter * 5, bounce: 5 - hit * 3, torso: -11 + wave * 4, head: 6 - wave * 3, armLeft: 27 + snap * 7, armRight: -27 - snap * 7, forearmLeft: -16 + counter * 8, forearmRight: 16 - counter * 8, legLeft: 7 + snap * 3, legRight: -7 - snap * 3 },
-      // Mechanical body hits
-      { hip: snap * 6, bounce: -hit * 6, torso: snap * 10, head: -snap * 8, armLeft: snap * 25, armRight: -snap * 25, forearmLeft: -22 + punch * 20, forearmRight: 22 - punch * 20, legLeft: snap * 8, legRight: -snap * 8 },
-      // Marching kick and diagonal guard
-      { hip: wave * 3, bounce: -hit * 7, torso: -wave * 7, head: wave * 5, armLeft: -38 + snap * 9, armRight: 19 - snap * 8, forearmLeft: -34 + punch * 8, forearmRight: 39 - punch * 10, legLeft: 5 + hit * 9, legRight: -5 - hit * 9 },
-    ],
-    [
-      // Club classics / euphoric: hands-up anthem bounce
-      { hip: wave * 4, bounce: -hit * 8, torso: -snap * 4, head: snap * 5, armLeft: -52 + snap * 7, armRight: 52 - snap * 7, forearmLeft: -27 + punch * 10, forearmRight: 27 - punch * 10, legLeft: wave * 7, legRight: -wave * 7 },
-      // Two-foot jump illusion
-      { hip: snap * 3, bounce: -hit * 13, torso: -wave * 5, head: wave * 6, armLeft: -34 + hit * 13, armRight: 34 - hit * 13, forearmLeft: -38 + snap * 11, forearmRight: 38 - snap * 11, legLeft: hit * 9, legRight: -hit * 9 },
-      // Sweeping festival sway
-      { hip: wave * 9, bounce: -hit * 4, torso: wave * 8, head: -wave * 8, armLeft: -23 + snap * 23, armRight: 23 - snap * 23, forearmLeft: -43 + counter * 9, forearmRight: 43 - counter * 9, legLeft: wave * 8, legRight: -wave * 8 },
-      // Star-pose body hits
-      { hip: snap * 6, bounce: -hit * 8, torso: snap * 10, head: -snap * 9, armLeft: -48 + punch * 10, armRight: 48 - punch * 10, forearmLeft: 20 - hit * 12, forearmRight: -20 + hit * 12, legLeft: snap * 9, legRight: -snap * 9 },
-      // Turning arms and heel steps
-      { hip: counter * 8, bounce: -hit * 6, torso: -counter * 9, head: counter * 10, armLeft: -41 + wave * 18, armRight: 16 + wave * 18, forearmLeft: -29 + punch * 14, forearmRight: -41 - punch * 14, legLeft: counter * 9, legRight: -counter * 9 },
-    ],
-  ];
-
-  const accent = accents[trackIndex][move];
-  return {
-    hip: accent.hip ?? 0,
-    bounce: accent.bounce ?? 0,
-    torso: accent.torso ?? 0,
-    head: accent.head ?? 0,
-    armLeft: accent.armLeft ?? 0,
-    armRight: accent.armRight ?? 0,
-    forearmLeft: accent.forearmLeft ?? 0,
-    forearmRight: accent.forearmRight ?? 0,
-    legLeft: accent.legLeft ?? 0,
-    legRight: accent.legRight ?? 0,
-  };
-}
-
-function dancePose(trackIndex, time) {
-  const profile = TRACK_PROFILES[trackIndex];
-  const beat = time * (profile.bpm / 60) * Math.PI * 2;
-  const half = beat * 0.5;
-  const hit = Math.abs(Math.sin(beat));
-  const phraseSeconds = (60 / profile.bpm) * 8;
-  const phrasePosition = time / phraseSeconds;
-  const move = Math.floor(phrasePosition) % DANCE_MOVE_COUNT;
-  const previousMove = (move + DANCE_MOVE_COUNT - 1) % DANCE_MOVE_COUNT;
-  const transition = smoothstep((phrasePosition % 1) / 0.16);
-  const previousAccent = danceAccent(trackIndex, previousMove, beat, half, hit);
-  const currentAccent = danceAccent(trackIndex, move, beat, half, hit);
-  const accent = blendPose(previousAccent, currentAccent, transition);
-  const base = baseDancePose(trackIndex, beat, half, hit);
-
-  return Object.fromEntries(Object.keys(base).map((key) => [key, base[key] + accent[key]]));
-}
-
-function blendPose(previous, current, amount) {
-  return Object.fromEntries(Object.keys(current).map((key) => [key, mix(previous[key], current[key], amount)]));
-}
-
 function makeFallbackController(container) {
   container.innerHTML = FALLBACK_MARKUP;
   container.classList.add("using-fallback");
   return {
     setPerforming(performing) { container.classList.toggle("fallback-performing", performing); },
     setTrack(index) { container.dataset.fallbackTrack = String(index); },
+    setPulse() {},
     setVocal(vocal) { container.classList.toggle("fallback-vocal", vocal); },
     react() { container.classList.remove("fallback-react"); requestAnimationFrame(() => container.classList.add("fallback-react")); },
     getState() { return { fallback: true }; },
@@ -419,6 +267,8 @@ export function createPerformerRig(container, { getAudioLevel = () => 0 } = {}) 
 
     const visemes = [...svg.querySelectorAll("[data-viseme]")];
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const motions = TRACK_PROFILES.map((_, index) => createDanceMotion(index));
+    const motionPulse = { step: 0, level: 0, downbeat: false };
     let destroyed = false;
     let frameId;
     let lastTime = performance.now();
@@ -437,8 +287,16 @@ export function createPerformerRig(container, { getAudioLevel = () => 0 } = {}) 
     let nextGaze = lastTime + 900;
     let reactionUntil = 0;
     let reactionDirection = 1;
-    let hairFollow = 0;
-    let previousHip = 0;
+    let backHairFollow = 0;
+    let frontHairFollow = 0;
+    let strapFollow = 0;
+    let previousRootX = 0;
+    let pulseTarget = 0;
+    let pulseLevel = 0;
+    let pulseStep = 0;
+    let pulseDownbeatUntil = 0;
+    let lastPulseAt = 0;
+    let phaseCorrection = 0;
     let currentViseme = "rest";
 
     function apply(element, { x = 0, y = 0, rotation = 0, scaleX = 1, scaleY = 1 } = {}) {
@@ -460,27 +318,54 @@ export function createPerformerRig(container, { getAudioLevel = () => 0 } = {}) 
       elapsed += delta;
       const reduced = reducedMotion.matches;
       const motionScale = reduced ? 0.24 : 1;
+      const secondaryScale = reduced ? 0.18 : 1;
+      const idleScale = reduced ? 0.22 : 1;
+      const reactionScale = reduced ? 0.2 : 1;
 
       performanceAmount = damp(performanceAmount, performingTarget, performingTarget ? 4.8 : 2.6, delta);
       trackBlend = clamp(trackBlend + delta * 2.8, 0, 1);
-      const oldPose = dancePose(previousTrack, elapsed);
-      const newPose = dancePose(currentTrack, elapsed);
-      const dance = blendPose(oldPose, newPose, smoothstep(trackBlend));
+      if (!lastPulseAt || now - lastPulseAt > 240) pulseTarget = 0;
+      pulseLevel = damp(pulseLevel, pulseTarget, pulseTarget > pulseLevel ? 13 : 5.5, delta);
+      motionPulse.step = pulseStep;
+      motionPulse.level = pulseLevel;
+      motionPulse.downbeat = now < pulseDownbeatUntil;
+      const motionTime = elapsed + phaseCorrection;
+      const oldPose = motions[previousTrack].sample(motionTime, motionPulse);
+      const newPose = motions[currentTrack].sample(motionTime, motionPulse);
+      const poseBlend = smoothstep(trackBlend);
+      const danceHip = mix(oldPose.hip, newPose.hip, poseBlend);
+      const dancePelvis = mix(oldPose.pelvis, newPose.pelvis, poseBlend);
+      const danceBounce = mix(oldPose.bounce, newPose.bounce, poseBlend);
+      const danceTorso = mix(oldPose.torso, newPose.torso, poseBlend);
+      const danceShoulderLeft = mix(oldPose.shoulderLeft, newPose.shoulderLeft, poseBlend);
+      const danceShoulderRight = mix(oldPose.shoulderRight, newPose.shoulderRight, poseBlend);
+      const danceHead = mix(oldPose.head, newPose.head, poseBlend);
+      const danceArmLeft = mix(oldPose.armLeft, newPose.armLeft, poseBlend);
+      const danceArmRight = mix(oldPose.armRight, newPose.armRight, poseBlend);
+      const danceForearmLeft = mix(oldPose.forearmLeft, newPose.forearmLeft, poseBlend);
+      const danceForearmRight = mix(oldPose.forearmRight, newPose.forearmRight, poseBlend);
+      const danceLegLeft = mix(oldPose.legLeft, newPose.legLeft, poseBlend);
+      const danceLegRight = mix(oldPose.legRight, newPose.legRight, poseBlend);
+      const danceLowerLegLeft = mix(oldPose.lowerLegLeft, newPose.lowerLegLeft, poseBlend);
+      const danceLowerLegRight = mix(oldPose.lowerLegRight, newPose.lowerLegRight, poseBlend);
       const profile = TRACK_PROFILES[currentTrack];
 
-      const breath = Math.sin(elapsed * 1.72) * 0.012;
-      const idleShift = Math.sin(elapsed * 0.73) * 2.15;
-      const idleHead = Math.sin(elapsed * 0.51 + 0.8) * 1.35;
+      const breath = Math.sin(elapsed * 1.25) * 0.012;
+      const idleShift = Math.sin(elapsed * 0.73) * 2.15 * idleScale;
+      const idleHead = Math.sin(elapsed * 0.51 + 0.8) * 1.35 * idleScale;
       const amount = performanceAmount * motionScale;
       const reaction = clamp((reactionUntil - now) / 620, 0, 1);
-      const reactionCurve = Math.sin(reaction * Math.PI);
-      const hip = idleShift * (1 - performanceAmount * 0.55) + dance.hip * amount;
-      const bounce = dance.bounce * amount;
-      const torsoRotation = dance.torso * amount + reactionCurve * reactionDirection * 5;
-      const headRotation = idleHead + dance.head * amount - reactionCurve * reactionDirection * 9;
-      const hipVelocity = (hip - previousHip) / Math.max(delta, 0.001);
-      previousHip = hip;
-      hairFollow = damp(hairFollow, clamp(-hipVelocity * 0.035 - headRotation * 0.28, -8, 8), 5.2, delta);
+      const reactionCurve = Math.sin(reaction * Math.PI) * reactionScale;
+      const rootX = idleShift * (1 - performanceAmount * 0.55) + dancePelvis * amount;
+      const bounce = danceBounce * amount;
+      const torsoRotation = (danceTorso + danceHip * 0.18) * amount + reactionCurve * reactionDirection * 5;
+      const headRotation = idleHead + danceHead * amount + torsoRotation * 0.1 - reactionCurve * reactionDirection * 9;
+      const rootVelocity = (rootX - previousRootX) / Math.max(delta, 0.001);
+      previousRootX = rootX;
+      const secondaryTarget = clamp(-rootVelocity * 0.035 - headRotation * 0.28, -8, 8) * secondaryScale;
+      backHairFollow = damp(backHairFollow, secondaryTarget, 4.1, delta);
+      frontHairFollow = damp(frontHairFollow, secondaryTarget * 0.72, 7.4, delta);
+      strapFollow = damp(strapFollow, clamp(-rootVelocity * 0.02, -6, 6) * secondaryScale, 3.2, delta);
 
       if (now >= nextGaze) {
         gazeTarget = (Math.random() * 2 - 1) * 2.5;
@@ -503,35 +388,35 @@ export function createPerformerRig(container, { getAudioLevel = () => 0 } = {}) 
 
       const posture = currentTrack === 2 ? -2.5 : currentTrack === 3 ? 1.8 : 0;
       apply(parts.torso, {
-        x: hip * 0.42,
+        x: rootX * 0.42,
         y: bounce + reactionCurve * -2,
         rotation: torsoRotation,
         scaleX: 1 + breath * 0.35,
         scaleY: 1 + breath + amount * 0.004,
       });
       apply(parts.head, {
-        x: hip * 0.28 + reactionCurve * reactionDirection * 2,
+        x: rootX * 0.28 + reactionCurve * reactionDirection * 2,
         y: bounce * 0.78 + posture,
         rotation: headRotation,
       });
-      apply(parts.hairBack, { x: hip * 0.2, y: bounce * 0.65, rotation: hairFollow * 0.48 });
-      apply(parts.hairLeft, { rotation: hairFollow * 0.8 + Math.sin(elapsed * 1.1) * 1.3 });
-      apply(parts.hairRight, { rotation: hairFollow * 0.72 - Math.sin(elapsed * 1.05) * 1.1 });
-      apply(parts.hairFrontLeft, { rotation: hairFollow * 0.38 });
-      apply(parts.hairFrontRight, { rotation: hairFollow * 0.33 });
+      apply(parts.hairBack, { x: rootX * 0.2, y: bounce * 0.65, rotation: backHairFollow * 0.48 });
+      apply(parts.hairLeft, { rotation: backHairFollow * 0.8 + Math.sin(elapsed * 1.1) * 1.3 * secondaryScale });
+      apply(parts.hairRight, { rotation: backHairFollow * 0.72 - Math.sin(elapsed * 1.05) * 1.1 * secondaryScale });
+      apply(parts.hairFrontLeft, { rotation: frontHairFollow * 0.48 });
+      apply(parts.hairFrontRight, { rotation: frontHairFollow * 0.42 });
 
-      apply(parts.armLeft, { x: hip * 0.25, y: bounce * 0.72, rotation: dance.armLeft * amount - reactionCurve * 18 });
-      apply(parts.armRight, { x: hip * 0.25, y: bounce * 0.72, rotation: dance.armRight * amount + reactionCurve * 13 });
-      apply(parts.forearmLeft, { rotation: dance.forearmLeft * amount - reactionCurve * 24 });
-      apply(parts.forearmRight, { rotation: dance.forearmRight * amount + reactionCurve * 18 });
-      apply(parts.legLeft, { x: hip * 0.24, y: bounce * 0.35, rotation: dance.legLeft * amount });
-      apply(parts.legRight, { x: hip * 0.24, y: bounce * 0.35, rotation: dance.legRight * amount });
-      apply(parts.lowerLegLeft, { rotation: -dance.legLeft * amount * 0.55 });
-      apply(parts.lowerLegRight, { rotation: -dance.legRight * amount * 0.55 });
-      apply(parts.belt, { x: hip * 0.3, y: bounce * 0.25, rotation: torsoRotation * 0.36 });
-      apply(parts.strapLeft, { rotation: hairFollow * 0.45 + dance.legLeft * amount * 0.7 });
-      apply(parts.strapRight, { rotation: hairFollow * 0.38 + dance.legRight * amount * 0.7 });
-      apply(parts.groundShadow, { x: hip * 0.18, scaleX: 1 - Math.abs(bounce) * 0.012, scaleY: 1 - Math.abs(bounce) * 0.02 });
+      apply(parts.armLeft, { x: rootX * 0.25, y: bounce * 0.72, rotation: (danceArmLeft + danceShoulderLeft) * amount - reactionCurve * 18 });
+      apply(parts.armRight, { x: rootX * 0.25, y: bounce * 0.72, rotation: (danceArmRight + danceShoulderRight) * amount + reactionCurve * 13 });
+      apply(parts.forearmLeft, { rotation: danceForearmLeft * amount - reactionCurve * 24 });
+      apply(parts.forearmRight, { rotation: danceForearmRight * amount + reactionCurve * 18 });
+      apply(parts.legLeft, { x: rootX * 0.24, y: bounce * 0.35, rotation: danceLegLeft * amount });
+      apply(parts.legRight, { x: rootX * 0.24, y: bounce * 0.35, rotation: danceLegRight * amount });
+      apply(parts.lowerLegLeft, { rotation: danceLowerLegLeft * amount });
+      apply(parts.lowerLegRight, { rotation: danceLowerLegRight * amount });
+      apply(parts.belt, { x: rootX * 0.3, y: bounce * 0.25, rotation: torsoRotation * 0.36 + danceHip * amount * 0.28 });
+      apply(parts.strapLeft, { rotation: strapFollow * 0.55 + danceLegLeft * amount * 0.7 });
+      apply(parts.strapRight, { rotation: strapFollow * 0.46 + danceLegRight * amount * 0.7 });
+      apply(parts.groundShadow, { x: rootX * 0.18, scaleX: 1 - Math.abs(bounce) * 0.012, scaleY: 1 - Math.abs(bounce) * 0.02 });
 
       apply(parts.eyeLeft, { scaleY: clamp(blinkScale * profile.eye, 0.04, 1.2) });
       const wink = reaction > 0.35 && reactionDirection < 0 ? 0.18 : 1;
@@ -583,6 +468,25 @@ export function createPerformerRig(container, { getAudioLevel = () => 0 } = {}) 
         currentTrack = nextTrack;
         trackBlend = 0;
       },
+      setPulse({ step = 0, level = 0, downbeat = false } = {}) {
+        const now = performance.now();
+        pulseStep = Number.isFinite(step) ? Math.trunc(step) : 0;
+        pulseTarget = clamp(Number.isFinite(level) ? level * 2.4 : 0, 0, 1);
+        lastPulseAt = now;
+        pulseDownbeatUntil = downbeat ? now + 170 : now;
+
+        const beatsPerSecond = TRACK_PROFILES[currentTrack].bpm / 60;
+        const currentBarBeat = ((elapsed + phaseCorrection) * beatsPerSecond) % 4;
+        const targetBarBeat = (((pulseStep % 16) + 16) % 16) / 4;
+        let beatError = targetBarBeat - currentBarBeat;
+        if (beatError > 2) beatError -= 4;
+        if (beatError < -2) beatError += 4;
+        phaseCorrection = clamp(
+          phaseCorrection + clamp(beatError / beatsPerSecond, -0.08, 0.08) * 0.28,
+          -0.18,
+          0.18,
+        );
+      },
       setVocal(vocal, _word, step = 0) {
         if (vocal) {
           vocalUntil = performance.now() + 175;
@@ -597,6 +501,7 @@ export function createPerformerRig(container, { getAudioLevel = () => 0 } = {}) 
           fallback: false,
           performing: performingTarget === 1,
           performanceAmount,
+          pulseLevel,
           track: currentTrack,
           emotion: TRACK_PROFILES[currentTrack].emotion,
           viseme: currentViseme,

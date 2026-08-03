@@ -1,63 +1,168 @@
-const TRACKS = [
-  { title: "360", bpm: 128, file: "360.mp3" },
-  { title: "Von dutch", bpm: 132, file: "von-dutch.mp3" },
-  { title: "Apple", bpm: 124, file: "apple.mp3" },
-  { title: "Club classics", bpm: 136, file: "club-classics.mp3" },
-];
-
 const TRACK_MANIFEST_URL = "/public/audio/manifest.json";
 const FALLBACK_DURATION_SECONDS = 18;
 
 // These are intentionally original, compact radio sketches rather than copies
 // of the named songs. A licensed local/device file always takes precedence.
-const FALLBACK_ARRANGEMENTS = [
+const TRACK_CATALOG = [
   {
-    root: 45,
-    progression: [0, 3, 7, 5],
-    bass: [0, null, 0, 7, 0, null, 3, null, 0, 7, null, 3, 5, null, 7, null],
-    lead: [12, null, 15, null, 19, null, 15, null, 12, null, 19, 17, null, 15, null, null],
-    vocalSteps: [0, 2, 4, 6, 10, 11, 13],
-    wave: "triangle",
-    color: 1900,
-    kick: [0, 4, 8, 12],
-    hats: "even",
+    id: "360",
+    title: "360",
+    bpm: 128,
+    file: "360.mp3",
+    emotion: "confident",
+    danceProfile: 0,
+    arrangement: {
+      root: 45,
+      progression: [0, 3, 7, 5],
+      bass: [0, null, 0, 7, 0, null, 3, null, 0, 7, null, 3, 5, null, 7, null],
+      lead: [12, null, 15, null, 19, null, 15, null, 12, null, 19, 17, null, 15, null, null],
+      vocalSteps: [0, 2, 4, 6, 10, 11, 13],
+      wave: "triangle",
+      color: 1900,
+      kick: [0, 4, 8, 12],
+      hats: "even",
+    },
   },
   {
-    root: 42,
-    progression: [0, 0, 5, 3],
-    bass: [0, 0, null, 0, 7, null, 0, null, 0, null, 5, 5, 3, null, 7, null],
-    lead: [12, null, null, 12, 17, null, 15, null, 12, 12, null, 19, null, 17, null, null],
-    vocalSteps: [0, 3, 4, 8, 9, 11, 13],
-    wave: "sawtooth",
-    color: 1250,
-    kick: [0, 3, 6, 8, 11, 12, 14],
-    hats: "all",
+    id: "von-dutch",
+    title: "Von dutch",
+    bpm: 132,
+    file: "von-dutch.mp3",
+    emotion: "playful",
+    danceProfile: 1,
+    arrangement: {
+      root: 42,
+      progression: [0, 0, 5, 3],
+      bass: [0, 0, null, 0, 7, null, 0, null, 0, null, 5, 5, 3, null, 7, null],
+      lead: [12, null, null, 12, 17, null, 15, null, 12, 12, null, 19, null, 17, null, null],
+      vocalSteps: [0, 3, 4, 8, 9, 11, 13],
+      wave: "sawtooth",
+      color: 1250,
+      kick: [0, 3, 6, 8, 11, 12, 14],
+      hats: "all",
+    },
   },
   {
-    root: 48,
-    progression: [0, 7, 9, 5],
-    bass: [0, null, 7, null, 0, null, 4, 7, 9, null, 4, null, 5, null, 7, null],
-    lead: [16, null, 19, 21, null, 19, null, 16, 14, null, 16, null, 21, 19, null, null],
-    vocalSteps: [0, 2, 3, 5, 8, 10, 12, 13],
-    wave: "triangle",
-    color: 2600,
-    kick: [0, 4, 8, 12],
-    hats: "skip",
+    id: "apple",
+    title: "Apple",
+    bpm: 124,
+    file: "apple.mp3",
+    emotion: "intense",
+    danceProfile: 2,
+    arrangement: {
+      root: 48,
+      progression: [0, 7, 9, 5],
+      bass: [0, null, 7, null, 0, null, 4, 7, 9, null, 4, null, 5, null, 7, null],
+      lead: [16, null, 19, 21, null, 19, null, 16, 14, null, 16, null, 21, 19, null, null],
+      vocalSteps: [0, 2, 3, 5, 8, 10, 12, 13],
+      wave: "triangle",
+      color: 2600,
+      kick: [0, 4, 8, 12],
+      hats: "skip",
+    },
   },
   {
-    root: 38,
-    progression: [0, 5, 7, 3],
-    bass: [0, null, 0, null, 5, null, 7, 7, 0, null, 12, null, 7, null, 3, null],
-    lead: [12, null, 12, 15, null, 17, null, 19, 12, null, 22, null, 19, 17, 15, null],
-    vocalSteps: [0, 2, 3, 6, 8, 10, 12, 14],
-    wave: "square",
-    color: 1550,
-    kick: [0, 4, 8, 10, 12, 14],
-    hats: "all",
+    id: "club-classics",
+    title: "Club classics",
+    bpm: 136,
+    file: "club-classics.mp3",
+    emotion: "euphoric",
+    danceProfile: 3,
+    arrangement: {
+      root: 38,
+      progression: [0, 5, 7, 3],
+      bass: [0, null, 0, null, 5, null, 7, 7, 0, null, 12, null, 7, null, 3, null],
+      lead: [12, null, 12, 15, null, 17, null, 19, 12, null, 22, null, 19, 17, 15, null],
+      vocalSteps: [0, 2, 3, 6, 8, 10, 12, 14],
+      wave: "square",
+      color: 1550,
+      kick: [0, 4, 8, 10, 12, 14],
+      hats: "all",
+    },
+  },
+  {
+    id: "b2b",
+    title: "B2b",
+    bpm: 130,
+    file: "b2b.mp3",
+    emotion: "confident",
+    danceProfile: 0,
+    arrangement: {
+      root: 43,
+      progression: [0, 5, 3, 7],
+      bass: [0, null, 0, 7, 5, null, 3, null, 0, 7, null, 5, 3, null, 7, null],
+      lead: [12, null, 15, null, 17, null, 15, null, 19, null, 17, 15, null, 12, null, null],
+      vocalSteps: [0, 2, 4, 6, 8, 10, 11, 13],
+      wave: "sawtooth",
+      color: 1750,
+      kick: [0, 4, 7, 8, 12, 14],
+      hats: "all",
+    },
+  },
+  {
+    id: "talk-talk",
+    title: "Talk talk",
+    bpm: 126,
+    file: "talk-talk.mp3",
+    emotion: "playful",
+    danceProfile: 1,
+    arrangement: {
+      root: 40,
+      progression: [0, 3, 5, 7],
+      bass: [0, null, 0, null, 3, null, 5, null, 0, 7, null, 5, 3, null, 7, null],
+      lead: [12, null, 15, null, 17, 15, null, 12, 19, null, 17, null, 15, 12, null, null],
+      vocalSteps: [0, 2, 4, 5, 8, 10, 12, 13],
+      wave: "triangle",
+      color: 2100,
+      kick: [0, 4, 6, 8, 12, 14],
+      hats: "even",
+    },
+  },
+  {
+    id: "guess",
+    title: "Guess",
+    bpm: 134,
+    file: "guess.mp3",
+    emotion: "intense",
+    danceProfile: 2,
+    arrangement: {
+      root: 46,
+      progression: [0, 7, 5, 3],
+      bass: [0, null, 7, null, 0, 5, null, 7, 0, null, 5, null, 3, 7, null, null],
+      lead: [16, null, 19, null, 21, 19, null, 16, 14, null, 19, null, 21, 19, 16, null],
+      vocalSteps: [0, 2, 4, 5, 8, 10, 12, 14],
+      wave: "sawtooth",
+      color: 2450,
+      kick: [0, 3, 4, 7, 8, 11, 12, 14],
+      hats: "skip",
+    },
+  },
+  {
+    id: "365",
+    title: "365",
+    bpm: 138,
+    file: "365.mp3",
+    emotion: "euphoric",
+    danceProfile: 3,
+    arrangement: {
+      root: 50,
+      progression: [0, 5, 9, 7],
+      bass: [0, null, 0, 5, 7, null, 9, null, 0, 7, null, 9, 5, null, 7, null],
+      lead: [19, null, 22, 24, null, 22, 19, null, 17, null, 19, 22, null, 24, 22, null],
+      vocalSteps: [0, 2, 3, 5, 8, 10, 11, 13],
+      wave: "square",
+      color: 2800,
+      kick: [0, 4, 7, 8, 10, 12, 14],
+      hats: "all",
+    },
   },
 ];
 
-const sources = TRACKS.map((track) => ({
+function publicTrack({ id, title, bpm, file, emotion, danceProfile }) {
+  return { id, title, bpm, file, emotion, danceProfile };
+}
+
+const sources = TRACK_CATALOG.map((track) => ({
   localUrl: `/public/audio/${track.file}`,
   localReady: false,
   checkedAt: 0,
@@ -146,7 +251,7 @@ function emitPulse(track) {
   // The analyser opens the mouth only when there is audible mid-band energy.
   // A brief rest at the end of each phrase prevents permanent "singing mouth".
   const phraseRest = step === 7 || step === 15;
-  const arrangement = currentTrack === null ? null : FALLBACK_ARRANGEMENTS[currentTrack];
+  const arrangement = currentTrack === null ? null : TRACK_CATALOG[currentTrack].arrangement;
   const syntheticPhrase = synthActive && arrangement?.vocalSteps.includes(step);
   const vocal = synthActive
     ? Boolean(syntheticPhrase && !phraseRest && smoothedLevel > 0.006)
@@ -387,7 +492,7 @@ function runSynthScheduler(session, track, arrangement) {
 }
 
 function startSynthTrack(index, track, onPulse, onEnded, context) {
-  const arrangement = FALLBACK_ARRANGEMENTS[index];
+  const arrangement = TRACK_CATALOG[index].arrangement;
   const session = ++activeSession;
   analyser = context.createAnalyser();
   analyser.fftSize = 256;
@@ -417,7 +522,7 @@ function startSynthTrack(index, track, onPulse, onEnded, context) {
   );
   monitorTrack(track);
   emitPulse(track);
-  return { ok: true, track, source: "built-in", fileName: null };
+  return { ok: true, track: publicTrack(track), source: "built-in", fileName: null };
 }
 
 function finishSession(session, reason, error = null) {
@@ -430,7 +535,7 @@ function finishSession(session, reason, error = null) {
   activeSession += 1;
   resetPlaybackState();
   try {
-    callback?.({ reason, index: finishedTrack, track: TRACKS[finishedTrack], error });
+    callback?.({ reason, index: finishedTrack, track: publicTrack(TRACK_CATALOG[finishedTrack]), error });
   } catch (callbackError) {
     console.warn("The radio completion callback failed.", callbackError);
   }
@@ -447,20 +552,20 @@ function mediaErrorMessage(element, track) {
 }
 
 export function getTracks() {
-  return TRACKS.map(({ title, bpm, file }) => ({ title, bpm, file }));
+  return TRACK_CATALOG.map(publicTrack);
 }
 
 export function prepareTrackSources({ force = false } = {}) {
   if (preparationPromise) return preparationPromise;
   const now = Date.now();
   if (!force && sources.every((source) => source.checkedAt && now - source.checkedAt < 5000)) {
-    return Promise.resolve(TRACKS.map(() => true));
+    return Promise.resolve(TRACK_CATALOG.map(() => true));
   }
 
   preparationPromise = loadLocalManifest().then((files) => {
     const availableFiles = new Set(files);
     return sources.map((source, index) => {
-      source.localReady = availableFiles.has(TRACKS[index].file);
+      source.localReady = availableFiles.has(TRACK_CATALOG[index].file);
       source.checkedAt = now;
       return true;
     });
@@ -471,7 +576,7 @@ export function prepareTrackSources({ force = false } = {}) {
 }
 
 export function hasTrackSource(index) {
-  return Boolean(TRACKS[index]);
+  return Boolean(TRACK_CATALOG[index]);
 }
 
 export function setTrackFile(index, file) {
@@ -505,7 +610,7 @@ export function getAudioLevel() {
 export async function startTrack(index, onPulse, onEnded) {
   stopTrack();
   const requestSession = activeSession;
-  const track = TRACKS[index];
+  const track = TRACK_CATALOG[index];
   if (!track) {
     return { ok: false, reason: "missing-track", message: "That track is not in this radio." };
   }
@@ -598,7 +703,7 @@ export async function startTrack(index, onPulse, onEnded) {
   emitPulse(track);
   return {
     ok: true,
-    track,
+    track: publicTrack(track),
     source: source.startsWith("blob:") ? "device" : "local",
     fileName: sources[index].fileName,
   };

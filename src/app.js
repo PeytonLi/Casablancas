@@ -8,7 +8,8 @@ import {
   setCategoryFilter,
   startNavigation,
   toggleNavigation,
-} from "./map.js?v=full-charli-1";
+} from "./map.js?v=navigation-polish-2";
+import { createAskCharleyClient } from "./ask-charley.js";
 import {
   getAudioLevel,
   getTracks,
@@ -16,7 +17,7 @@ import {
   prepareTrackSources,
   startTrack,
   stopTrack,
-} from "./music.js?v=radio-fallback-1";
+} from "./music.js?v=radio-catalog-1";
 import { createPerformerRig } from "./performer-rig.js";
 
 const tracks = getTracks();
@@ -25,6 +26,19 @@ const avatar = document.querySelector("#avatar");
 const rigContainer = document.querySelector("#avatar-rig");
 const lyric = document.querySelector("#lyric");
 const trackList = document.querySelector("#track-list");
+trackList.replaceChildren(...tracks.map((track, index) => {
+  const button = document.createElement("button");
+  button.id = `track-${index}`;
+  button.className = `track-option${index === 0 ? " selected" : ""}`;
+  button.type = "button";
+  button.dataset.track = String(index);
+  button.setAttribute("role", "option");
+  button.setAttribute("aria-selected", String(index === 0));
+  const label = document.createElement("span");
+  label.textContent = track.title;
+  button.append(label);
+  return button;
+}));
 const trackButtons = [...document.querySelectorAll("[data-track]")];
 const visualizer = document.querySelector("#visualizer");
 const mapView = document.querySelector("#map-view");
@@ -52,6 +66,13 @@ const mapPlaceClose = document.querySelector("#map-place-close");
 const navButtons = [...document.querySelectorAll(".nav-button")];
 const viewButtons = [...document.querySelectorAll("[data-view-target]")];
 const toast = document.querySelector("#toast");
+const askCharleyOpen = document.querySelector("#ask-charley-open");
+const askCharleySheet = document.querySelector("#ask-charley-sheet");
+const askCharleyClose = document.querySelector("#ask-charley-close");
+const askCharleyForm = document.querySelector("#ask-charley-form");
+const askCharleyQuestion = document.querySelector("#ask-charley-question");
+const askCharleySend = document.querySelector("#ask-charley-send");
+const askCharleyStatus = document.querySelector("#ask-charley-status");
 
 let selectedTrack = 0;
 let performanceActive = false;
@@ -68,8 +89,10 @@ let pointerStartX = 0;
 let pointerStartScroll = 0;
 let tunerDragging = false;
 let suppressTrackClick = false;
+let askCharleyPending = false;
 
 const rig = createPerformerRig(rigContainer, { getAudioLevel });
+const askCharley = createAskCharleyClient();
 
 for (let index = 0; index < 48; index += 1) {
   const bar = document.createElement("i");
@@ -84,6 +107,22 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add("visible");
   toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2200);
+}
+
+function updateAskCharleySendState() {
+  askCharleySend.disabled = askCharleyPending || !askCharleyQuestion.value.trim();
+}
+
+function openAskCharley() {
+  askCharleySheet.hidden = false;
+  askCharleyOpen.setAttribute("aria-expanded", "true");
+  window.requestAnimationFrame(() => askCharleyQuestion.focus());
+}
+
+function closeAskCharley() {
+  askCharleySheet.hidden = true;
+  askCharleyOpen.setAttribute("aria-expanded", "false");
+  askCharleyOpen.focus();
 }
 
 function formatDistance(meters) {
@@ -167,8 +206,8 @@ function updatePlaybackUi(playing) {
 
 function updateTrackUi(index) {
   selectedTrack = (index + tracks.length) % tracks.length;
-  app.dataset.emotion = ["confident", "playful", "intense", "euphoric"][selectedTrack];
-  rig.setTrack(selectedTrack);
+  app.dataset.emotion = tracks[selectedTrack].emotion;
+  rig.setTrack(tracks[selectedTrack].danceProfile);
   trackList.setAttribute("aria-activedescendant", `track-${selectedTrack}`);
 
   trackButtons.forEach((button, buttonIndex) => {
@@ -203,7 +242,8 @@ function nearestTunerTrack() {
   }, 0);
 }
 
-function onMusicPulse({ step, vocal, word }) {
+function onMusicPulse({ step, level, downbeat, vocal, word }) {
+  rig.setPulse({ step, level, downbeat });
   rig.setVocal(vocal, word, step);
   lyric.textContent = "";
 }
@@ -392,6 +432,41 @@ async function showView(view) {
 
 viewButtons.forEach((button) => {
   button.addEventListener("click", () => showView(button.dataset.viewTarget));
+});
+
+askCharleyOpen.addEventListener("click", openAskCharley);
+askCharleyClose.addEventListener("click", closeAskCharley);
+
+askCharleyQuestion.addEventListener("input", updateAskCharleySendState);
+
+askCharleyForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (askCharleyPending || !askCharleyQuestion.value.trim()) return;
+
+  askCharleyPending = true;
+  askCharleyStatus.textContent = "Asking Charlie…";
+  updateAskCharleySendState();
+
+  try {
+    const reply = await askCharley.ask(askCharleyQuestion.value);
+    askCharleySheet.dataset.destination = reply.dest;
+    askCharleyStatus.textContent = reply.speech;
+    if ("speechSynthesis" in window && "SpeechSynthesisUtterance" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(reply.speech);
+      utterance.rate = 1.03;
+      window.speechSynthesis.speak(utterance);
+    }
+  } catch (error) {
+    askCharleyStatus.textContent = error instanceof Error ? error.message : "Charlie is reconnecting.";
+  } finally {
+    askCharleyPending = false;
+    updateAskCharleySendState();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !askCharleySheet.hidden) closeAskCharley();
 });
 
 navigationPrimary.addEventListener("click", () => {
