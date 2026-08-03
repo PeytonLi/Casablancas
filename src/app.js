@@ -401,6 +401,7 @@ trackList.addEventListener("pointercancel", finishTunerDrag);
 
 async function showView(view) {
   const target = ["home", "map", "shows"].includes(view) ? view : "home";
+  if (target !== "home" && !askCharleySheet.hidden) closeAskCharley();
   if (target !== "map" && navigationState === "running") toggleNavigation();
   app.dataset.view = target;
   mapView.hidden = target !== "map";

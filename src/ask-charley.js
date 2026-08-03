@@ -2,12 +2,12 @@ const DEFAULT_ENDPOINT = "https://content-cheetah-171.convex.site/ask";
 const RECONNECTING_MESSAGE = "Charlie is reconnecting.";
 
 const LOCAL_REPLIES = [
-  [/\b(restroom|bathroom|toilet|wc)\b/i, "The nearest restroom is beside the central water refill, right along the route to Sutro."],
+  [/\b(restroom|bathroom|toilet|wc)\b/i, "Okay, follow me."],
   [/\b(water|refill|hydration)\b/i, "The closest water refill is directly along the route to Sutro Stage."],
   [/\b(sutro|stage|set)\b/i, "Sutro Stage is about six minutes away. Open the map and follow the acid-green route."],
   [/\b(food|eat|hungry|drink)\b/i, "Food Alley is north of the Polo Field, marked with the orange fork icon."],
   [/\b(song|track|beat|music)\b/i, "Swipe the tuner to change tracks. Every station now has its own tempo, groove, and sound."],
-  [/\b(show|next|ticket)\b/i, "Tap Shows below to see the next performance and ticket link."],
+  [/\b(show|next|ticket)\b/i, "The next show is The Strokes at Lands End on August 8."],
 ];
 
 function normalizeString(value) {

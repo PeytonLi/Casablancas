@@ -122,13 +122,18 @@ svg {
 }
 
 .ask-charley-open {
-  min-height: 28px;
+  min-height: 44px;
   padding: 0 9px;
   border: 1px solid rgba(168, 255, 0, 0.56);
   border-radius: 999px;
   color: var(--acid-bright);
   cursor: pointer;
   background: rgba(149, 224, 0, 0.05);
+}
+
+#app:not([data-view="home"]) .ask-charley-open {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .ask-charley-open:hover,

@@ -57,6 +57,6 @@ test("uses a stable message when Charlie returns malformed JSON", async () => {
 
 test("answers festival questions locally when the live service is unavailable", async () => {
   const client = createAskCharleyClient();
-  assert.match((await client.ask("Where is the bathroom?")).speech, /restroom/i);
+  assert.match((await client.ask("Where is the bathroom?")).speech, /follow me/i);
   assert.match((await client.ask("change the music")).speech, /tuner/i);
 });
