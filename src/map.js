@@ -575,6 +575,17 @@ export function searchPlaces(query = "") {
   });
 }
 
+export function nearestPlace(category, origin = NAVIGATION_ROUTE[0]) {
+  const [originLongitude, originLatitude] = origin;
+  return festivalPlaces
+    .filter((place) => place.category === category)
+    .reduce((nearest, place) => {
+      const distance = (place.coordinates[0] - originLongitude) ** 2
+        + (place.coordinates[1] - originLatitude) ** 2;
+      return !nearest || distance < nearest.distance ? { place, distance } : nearest;
+    }, null)?.place ?? null;
+}
+
 export function focusPlace(id) {
   const place = festivalPlaces.find((candidate) => candidate.id === String(id));
   if (!place || !map) return false;

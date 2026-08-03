@@ -1,9 +1,6 @@
-const DEFAULT_TTS_ENDPOINT = "https://content-cheetah-171.convex.site/tts";
+const DEFAULT_TTS_ENDPOINT = "https://healthy-goshawk-628.convex.site/tts";
 const VOICE_ERROR = "Charlie voice is unavailable.";
-const BUNDLED_AUDIO = {
-  "Okay, follow me.": "/audio/charlie-toilet.mp3",
-  "The next show is The Strokes at Lands End on August 8.": "/audio/charlie-next-show.mp3",
-};
+const BUNDLED_AUDIO = {};
 
 export function createCharlieVoicePlayer({
   endpoint = DEFAULT_TTS_ENDPOINT,

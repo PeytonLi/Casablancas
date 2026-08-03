@@ -3,35 +3,27 @@ import test from "node:test";
 
 import { createAskCharleyClient } from "../src/ask-charley.js";
 
-test("posts a trimmed question and returns normalized reply fields", async () => {
-  let request;
+test("passes a trimmed question to the Q&A client and normalizes its reply", async () => {
+  let receivedQuestion;
   const client = createAskCharleyClient({
-    endpoint: "https://example.test/ask",
-    fetchImpl: async (url, options) => {
-      request = { url, options };
-      return new Response(JSON.stringify({ speech: "  Water is ahead.  ", dest: "  water-1  " }), { status: 200 });
+    askImpl: async (question) => {
+      receivedQuestion = question;
+      return { speech: "  Water is ahead.  ", dest: "  water-1  " };
     },
   });
 
   const reply = await client.ask("  where is water?  ");
 
-  assert.deepEqual(request, {
-    url: "https://example.test/ask",
-    options: {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: "where is water?" }),
-    },
-  });
+  assert.equal(receivedQuestion, "where is water?");
   assert.deepEqual(reply, { speech: "Water is ahead.", dest: "water-1" });
 });
 
 test("rejects a blank question before requesting Charlie", async () => {
   let calls = 0;
   const client = createAskCharleyClient({
-    fetchImpl: async () => {
+    askImpl: async () => {
       calls += 1;
-      return new Response();
+      return {};
     },
   });
 
@@ -41,25 +33,22 @@ test("rejects a blank question before requesting Charlie", async () => {
 
 test("uses a stable message when Charlie returns a non-success response", async () => {
   const client = createAskCharleyClient({
-    fetchImpl: async () => new Response("Unavailable", { status: 503 }),
+    askImpl: async () => { throw new Error("Unavailable"); },
   });
 
   await assert.rejects(client.ask("Where is the stage?"), { message: "Charlie is reconnecting." });
 });
 
-test("uses a stable message when Charlie returns malformed JSON", async () => {
+test("uses a stable message when Charlie returns a malformed response", async () => {
   const client = createAskCharleyClient({
-    fetchImpl: async () => new Response("not json", { status: 200 }),
+    askImpl: async () => ({}),
   });
 
   await assert.rejects(client.ask("Where is the stage?"), { message: "Charlie is reconnecting." });
 });
 
-test("answers the two demo questions locally when the live service is unavailable", async () => {
+test("uses the two hard-coded Q&A demo answers", async () => {
   const client = createAskCharleyClient();
-  assert.equal((await client.ask("Where is the bathroom?")).speech, "Okay, follow me.");
-  assert.equal(
-    (await client.ask("What's the next show?")).speech,
-    "The next show is The Strokes at Lands End on August 8.",
-  );
+  assert.match((await client.ask("Who are the top artists?")).speech, /Charli xcx.*The Strokes/);
+  assert.match((await client.ask("Where is the nearest bathroom?")).speech, /nearest restroom.*Lands End/i);
 });

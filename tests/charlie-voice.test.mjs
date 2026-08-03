@@ -30,7 +30,6 @@ test("plays ElevenLabs audio returned by the server and releases its object URL"
   let audio;
   const player = createCharlieVoicePlayer({
     audioByText: {},
-    endpoint: "https://example.test/tts",
     fetchImpl: async (url, options) => {
       request = { url, options };
       return new Response(new Uint8Array([1, 2, 3]), {
@@ -54,7 +53,7 @@ test("plays ElevenLabs audio returned by the server and releases its object URL"
 
   await player.speak("Okay, follow me.");
 
-  assert.equal(request.url, "https://example.test/tts");
+  assert.equal(request.url, "https://healthy-goshawk-628.convex.site/tts");
   assert.deepEqual(JSON.parse(request.options.body), { text: "Okay, follow me." });
   assert.equal(audio.url, "blob:charlie-voice");
   assert.equal(played, true);
