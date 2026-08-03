@@ -3,6 +3,7 @@ import {
   focusPlace,
   initMap,
   navigateToPlace,
+  nearestPlace,
   restartNavigation,
   searchPlaces,
   setCategoryFilter,
@@ -11,6 +12,7 @@ import {
 } from "./map.js?v=navigation-polish-2";
 import { createAskCharleyClient } from "./ask-charley.js";
 import { createCharlieVoicePlayer } from "./charlie-voice.js";
+import { transcribe } from "./api.js";
 import {
   getAudioLevel,
   getTracks,
@@ -72,6 +74,7 @@ const askCharleySheet = document.querySelector("#ask-charley-sheet");
 const askCharleyClose = document.querySelector("#ask-charley-close");
 const askCharleyForm = document.querySelector("#ask-charley-form");
 const askCharleyQuestion = document.querySelector("#ask-charley-question");
+const askCharleyMic = document.querySelector("#ask-charley-mic");
 const askCharleySend = document.querySelector("#ask-charley-send");
 const askCharleyStatus = document.querySelector("#ask-charley-status");
 
@@ -91,6 +94,7 @@ let pointerStartScroll = 0;
 let tunerDragging = false;
 let suppressTrackClick = false;
 let askCharleyPending = false;
+let askCharleyRecorder;
 
 const rig = createPerformerRig(rigContainer, { getAudioLevel });
 const askCharley = createAskCharleyClient();
@@ -112,7 +116,9 @@ function showToast(message) {
 }
 
 function updateAskCharleySendState() {
-  askCharleySend.disabled = askCharleyPending || !askCharleyQuestion.value.trim();
+  const recording = askCharleyRecorder?.state === "recording";
+  askCharleySend.disabled = askCharleyPending || recording || !askCharleyQuestion.value.trim();
+  askCharleyMic.disabled = askCharleyPending;
 }
 
 function openAskCharley() {
@@ -165,6 +171,18 @@ function showPlace(place, { focus = true } = {}) {
   mapPlaceCard.hidden = false;
   mapSearchResults.hidden = true;
   if (focus) focusPlace(place.id);
+}
+
+function showRouteToPlace(id) {
+  const place = navigateToPlace(id);
+  if (!place) return false;
+  navigationStatus.textContent = "Navigating to";
+  routeHeading.textContent = place.name;
+  routeCopy.textContent = place.shortDescription ?? "Follow the highlighted route.";
+  navigationPrimary.textContent = "Route shown";
+  navigationPrimary.disabled = true;
+  mapPlaceCard.hidden = true;
+  return true;
 }
 
 function renderPlaceResults(query = "") {
@@ -442,6 +460,61 @@ askCharleyClose.addEventListener("click", closeAskCharley);
 
 askCharleyQuestion.addEventListener("input", updateAskCharleySendState);
 
+askCharleyMic.addEventListener("click", async () => {
+  if (askCharleyRecorder?.state === "recording") {
+    askCharleyRecorder.stop();
+    return;
+  }
+
+  const mimeType = ["audio/webm;codecs=opus", "audio/webm"]
+    .find((type) => globalThis.MediaRecorder?.isTypeSupported(type));
+  if (!navigator.mediaDevices?.getUserMedia || !mimeType) {
+    askCharleyStatus.textContent = "Voice input is unavailable in this browser.";
+    return;
+  }
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = [];
+    askCharleyRecorder = new MediaRecorder(stream, { mimeType });
+    askCharleyRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size) chunks.push(event.data);
+    });
+    askCharleyRecorder.addEventListener("stop", async () => {
+      stream.getTracks().forEach((track) => track.stop());
+      const audio = new Blob(chunks, { type: mimeType });
+      askCharleyRecorder = undefined;
+      askCharleyMic.textContent = "Talk";
+      askCharleyMic.setAttribute("aria-pressed", "false");
+      askCharleyPending = true;
+      askCharleyStatus.textContent = "Transcribing your question…";
+      updateAskCharleySendState();
+
+      try {
+        askCharleyQuestion.value = await transcribe(audio);
+        askCharleyPending = false;
+        updateAskCharleySendState();
+        askCharleyForm.requestSubmit();
+      } catch {
+        askCharleyPending = false;
+        askCharleyStatus.textContent = "Charlie could not transcribe that recording. Try again.";
+        updateAskCharleySendState();
+      }
+    }, { once: true });
+    askCharleyRecorder.start();
+    askCharleyMic.textContent = "Stop & ask";
+    askCharleyMic.setAttribute("aria-pressed", "true");
+    askCharleyStatus.textContent = "Listening… tap Stop & ask when finished.";
+    updateAskCharleySendState();
+  } catch {
+    stream?.getTracks().forEach((track) => track.stop());
+    askCharleyRecorder = undefined;
+    askCharleyStatus.textContent = "Microphone access failed. Allow permission or type your question.";
+    updateAskCharleySendState();
+  }
+});
+
 askCharleyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (askCharleyPending || !askCharleyQuestion.value.trim()) return;
@@ -454,6 +527,13 @@ askCharleyForm.addEventListener("submit", async (event) => {
     const reply = await askCharley.ask(askCharleyQuestion.value);
     askCharleySheet.dataset.destination = reply.dest;
     askCharleyStatus.textContent = reply.speech;
+    if (reply.dest === "restroom") {
+      const restroom = nearestPlace("restroom");
+      if (restroom) {
+        await showView("map");
+        showRouteToPlace(restroom.id);
+      }
+    }
     try {
       await charlieVoice.speak(reply.speech);
     } catch {
@@ -526,14 +606,7 @@ mapPlaceClose.addEventListener("click", () => {
 
 mapPlaceNavigate.addEventListener("click", () => {
   if (!selectedPlaceId) return;
-  const place = navigateToPlace(selectedPlaceId);
-  if (!place) return;
-  navigationStatus.textContent = "Navigating to";
-  routeHeading.textContent = place.name;
-  routeCopy.textContent = place.shortDescription ?? "Follow the highlighted route.";
-  navigationPrimary.textContent = "Route shown";
-  navigationPrimary.disabled = true;
-  mapPlaceCard.hidden = true;
+  showRouteToPlace(selectedPlaceId);
 });
 
 mapContainer.addEventListener("placeselected", (event) => showPlace(event.detail, { focus: false }));

@@ -39,10 +39,12 @@ function demoAnswer(text) {
       sources: [{ label: "Official Outside Lands 2026 daily lineup", url: "https://sfoutsidelands.com/news/daily-lineups-are-here/" }],
     };
   }
-  if (/(nearest|where|find)/.test(question) && /(water|bathroom|restroom|toilet)/.test(question)) {
+  if (/\b(nearest|where|find|go|take me)\b/.test(question) && /(water|bathroom|restroom|toilet)/.test(question)) {
     const wantsWater = /water/.test(question);
     const wantsRestroom = /(bathroom|restroom|toilet)/.test(question);
-    const answer = "From South Gate, head northwest toward the Polo Field. The mapped water refill is near the North Tunnel Exit on the field’s north side, and the restrooms are just east of it.";
+    const answer = wantsRestroom && !wantsWater
+      ? "Opening the map and routing you to the nearest restroom, just south of Lands End."
+      : "From South Gate, head northwest toward the Polo Field. The mapped water refill is near the North Tunnel Exit on the field’s north side, and the restrooms are just east of it.";
     return { answer, speech: answer, dest: wantsWater === wantsRestroom ? null : wantsWater ? "water" : "restroom", sources: [] };
   }
   return null;

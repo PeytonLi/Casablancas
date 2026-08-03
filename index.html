@@ -151,6 +151,7 @@
           <label for="ask-charley-question">Ask Charlie a question</label>
           <div class="ask-charley-controls">
             <input id="ask-charley-question" name="question" type="text" autocomplete="off" placeholder="Ask about stages, food, or the festival" />
+            <button id="ask-charley-mic" type="button" aria-pressed="false">Talk</button>
             <button id="ask-charley-send" type="submit" disabled>Send</button>
           </div>
         </form>
@@ -161,6 +162,11 @@
     </main>
 
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+    <script>
+      globalThis.CASABLANCAS_CONFIG = {
+        apiBase: "https://healthy-goshawk-628.convex.site",
+      };
+    </script>
     <script type="module" src="/src/app.js?v=full-charli-1"></script>
   </body>
 </html>

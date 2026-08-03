@@ -2,35 +2,31 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createAskCharleyClient } from "../src/ask-charley.js";
+import { nearestPlace } from "../src/map.js";
 
 const client = createAskCharleyClient();
 
-test("matches common toilet requests with the concise navigation reply", async () => {
+test("matches common restroom requests with mapped directions", async () => {
   for (const question of [
     "Hey, nearest toilet",
     "I want to go to the toilet",
     "Where is the bathroom?",
   ]) {
     const reply = await client.ask(question);
-    assert.equal(reply.speech, "Okay, follow me.", question);
+    assert.match(reply.speech, /nearest restroom.*Lands End/i, question);
   }
 });
 
-test("matches next-show questions with the fixed festival answer", async () => {
+test("selects the closest restroom from the map route origin", () => {
+  assert.equal(nearestPlace("restroom")?.id, "lands-end-restrooms");
+});
+
+test("matches featured artist questions with the official daily lineup", async () => {
   for (const question of [
-    "What's the next show?",
-    "Which show is next?",
+    "Who are the top artists?",
+    "Which featured acts are in the lineup?",
   ]) {
     const reply = await client.ask(question);
-    assert.equal(
-      reply.speech,
-      "The next show is The Strokes at Lands End on August 8.",
-      question,
-    );
+    assert.match(reply.speech, /Charli xcx.*The Strokes.*RÜFÜS DU SOL/, question);
   }
-});
-
-test("keeps the hackathon demo limited to the two supported questions", async () => {
-  const reply = await client.ask("Where can I get food?");
-  assert.equal(reply.speech, "Ask me about the nearest toilet or the next show.");
 });
