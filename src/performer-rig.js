@@ -3,9 +3,9 @@ import { createDanceMotion } from "./dance-motion.js";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const TRACK_PROFILES = [
-  { emotion: "confident", bpm: 128, brow: -1, eye: 0.96, smile: 0.1 },
-  { emotion: "playful", bpm: 132, brow: 1.2, eye: 1.08, smile: 0.8 },
-  { emotion: "intense", bpm: 124, brow: -3, eye: 0.82, smile: -0.25 },
+  { emotion: "confident", bpm: 116, brow: -1, eye: 0.96, smile: 0.1 },
+  { emotion: "playful", bpm: 150, brow: 1.2, eye: 1.08, smile: 0.8 },
+  { emotion: "intense", bpm: 104, brow: -3, eye: 0.82, smile: -0.25 },
   { emotion: "euphoric", bpm: 136, brow: 2.4, eye: 1.14, smile: 1 },
 ];
 

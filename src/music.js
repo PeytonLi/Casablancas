@@ -7,7 +7,7 @@ const TRACK_CATALOG = [
   {
     id: "360",
     title: "360",
-    bpm: 128,
+    bpm: 116,
     file: "360.mp3",
     emotion: "confident",
     danceProfile: 0,
@@ -26,7 +26,7 @@ const TRACK_CATALOG = [
   {
     id: "von-dutch",
     title: "Von dutch",
-    bpm: 132,
+    bpm: 150,
     file: "von-dutch.mp3",
     emotion: "playful",
     danceProfile: 1,
@@ -45,7 +45,7 @@ const TRACK_CATALOG = [
   {
     id: "apple",
     title: "Apple",
-    bpm: 124,
+    bpm: 104,
     file: "apple.mp3",
     emotion: "intense",
     danceProfile: 2,
@@ -83,7 +83,7 @@ const TRACK_CATALOG = [
   {
     id: "b2b",
     title: "B2b",
-    bpm: 130,
+    bpm: 124,
     file: "b2b.mp3",
     emotion: "confident",
     danceProfile: 0,
@@ -102,7 +102,7 @@ const TRACK_CATALOG = [
   {
     id: "talk-talk",
     title: "Talk talk",
-    bpm: 126,
+    bpm: 142,
     file: "talk-talk.mp3",
     emotion: "playful",
     danceProfile: 1,
@@ -121,7 +121,7 @@ const TRACK_CATALOG = [
   {
     id: "guess",
     title: "Guess",
-    bpm: 134,
+    bpm: 112,
     file: "guess.mp3",
     emotion: "intense",
     danceProfile: 2,
@@ -140,7 +140,7 @@ const TRACK_CATALOG = [
   {
     id: "365",
     title: "365",
-    bpm: 138,
+    bpm: 156,
     file: "365.mp3",
     emotion: "euphoric",
     danceProfile: 3,
@@ -448,7 +448,8 @@ function scheduleSynthStep(context, track, arrangement, stepNumber, when) {
   const rootNote = arrangement.root + chordOffset;
 
   if (arrangement.kick.includes(step)) scheduleKick(context, synthMaster, when, step === 0 ? 1.14 : 1);
-  if (step === 4 || step === 12) scheduleNoise(context, synthMaster, when);
+  const snarePatterns = [[4, 12], [4, 12], [8], [2, 6, 10, 14]];
+  if (snarePatterns[track.danceProfile].includes(step)) scheduleNoise(context, synthMaster, when);
   const playHat = arrangement.hats === "all"
     || (arrangement.hats === "even" && step % 2 === 0)
     || (arrangement.hats === "skip" && step % 4 !== 0);

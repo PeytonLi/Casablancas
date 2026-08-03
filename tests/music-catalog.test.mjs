@@ -18,6 +18,7 @@ test("returns the complete public radio catalog with valid playback metadata", (
   ]);
   assert.equal(new Set(tracks.map((track) => track.id)).size, tracks.length);
   assert.equal(new Set(tracks.map((track) => track.file)).size, tracks.length);
+  assert.equal(new Set(tracks.map((track) => track.bpm)).size, tracks.length);
 
   for (const track of tracks) {
     assert.ok(Number.isFinite(track.bpm) && track.bpm >= 100 && track.bpm <= 160);
