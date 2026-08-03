@@ -1,37 +1,54 @@
-let app;
-let avatar;
-let label;
-let caption;
-let liveDot;
+export const AVATAR_STATES = Object.freeze([
+  "idle-pose",
+  "dial-preview",
+  "performance-loading",
+  "performance-enter",
+  "performance-playing",
+  "performance-paused",
+  "performance-exit",
+  "stopping",
+]);
 
-const modeLabels = {
-  idle: "Ready",
-  listening: "Listening…",
-  thinking: "Thinking…",
-  speaking: "Speaking",
-  singing: "Performing",
-};
-
-export function initAvatar(element) {
-  avatar = element;
-  app = document.querySelector("#app");
-  label = document.querySelector("#mode-label");
-  caption = avatar.querySelector(".performance-caption");
-  liveDot = avatar.querySelector(".live-dot");
-  setState("idle");
+export function reduceAvatar(state, event) {
+  if (event.type === "PREVIEW" && ["idle-pose", "dial-preview"].includes(state.mode)) {
+    return Object.freeze({ ...state, mode: "dial-preview", songIndex: event.songIndex });
+  }
+  if (event.type === "RELEASE" && state.mode === "dial-preview") {
+    return Object.freeze({ mode: "performance-loading", songIndex: state.songIndex, energy: 20 });
+  }
+  if (event.type === "MEDIA_READY" && state.mode === "performance-loading") return Object.freeze({ ...state, mode: "performance-enter" });
+  if (event.type === "ENTERED" && state.mode === "performance-enter") return Object.freeze({ ...state, mode: "performance-playing" });
+  if (event.type === "TOGGLE_PAUSE" && state.mode === "performance-playing") return Object.freeze({ ...state, mode: "performance-paused" });
+  if (event.type === "TOGGLE_PAUSE" && state.mode === "performance-paused") return Object.freeze({ ...state, mode: "performance-playing" });
+  if (event.type === "ENERGY" && ["performance-playing", "performance-paused"].includes(state.mode)) return Object.freeze({ ...state, energy: Math.max(0, Math.min(100, event.value)) });
+  if (event.type === "ENDED") return Object.freeze({ ...state, mode: "performance-exit" });
+  if (event.type === "EXITED" || event.type === "CHOOSE") return Object.freeze({ mode: "idle-pose", songIndex: state.songIndex, energy: 20 });
+  if (event.type === "MEDIA_ERROR") return Object.freeze({ mode: "idle-pose", songIndex: state.songIndex, energy: 20, error: "TRY ANOTHER" });
+  return state;
 }
 
-export function setState(state) {
-  if (!app || !avatar) return;
+export function createAvatarMachine(onChange) {
+  let state = Object.freeze({ mode: "idle-pose", songIndex: 0, energy: 20 });
+  const subscribers = new Set();
 
-  app.className = `app-shell mode-${state}`;
-  avatar.classList.toggle("is-performing", state === "speaking" || state === "singing");
-  label.textContent = modeLabels[state] || modeLabels.idle;
-  liveDot.classList.toggle("active", state === "speaking" || state === "singing");
-}
+  if (typeof onChange === "function") subscribers.add(onChange);
 
-export function setLyric(text = "") {
-  if (!caption) return;
-  caption.textContent = text;
-  caption.classList.toggle("visible", Boolean(text));
+  return Object.freeze({
+    getState: () => state,
+    send(event) {
+      const previousState = state;
+      const nextState = reduceAvatar(state, event);
+
+      if (nextState !== previousState) {
+        state = nextState;
+        subscribers.forEach((subscriber) => subscriber(state, previousState, event));
+      }
+
+      return state;
+    },
+    subscribe(subscriber) {
+      subscribers.add(subscriber);
+      return () => subscribers.delete(subscriber);
+    },
+  });
 }
