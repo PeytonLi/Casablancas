@@ -1,8 +1,13 @@
 const DEFAULT_TTS_ENDPOINT = "https://content-cheetah-171.convex.site/tts";
 const VOICE_ERROR = "Charlie voice is unavailable.";
+const BUNDLED_AUDIO = {
+  "Okay, follow me.": "/audio/charlie-toilet.mp3",
+  "The next show is The Strokes at Lands End on August 8.": "/audio/charlie-next-show.mp3",
+};
 
 export function createCharlieVoicePlayer({
   endpoint = DEFAULT_TTS_ENDPOINT,
+  audioByText = BUNDLED_AUDIO,
   fetchImpl = globalThis.fetch,
   createObjectURL = (blob) => URL.createObjectURL(blob),
   revokeObjectURL = (url) => URL.revokeObjectURL(url),
@@ -25,6 +30,19 @@ export function createCharlieVoicePlayer({
       stop();
 
       try {
+        const bundledUrl = audioByText[text];
+        if (bundledUrl) {
+          const audio = audioFactory(bundledUrl);
+          currentAudio = audio;
+          const release = () => {
+            if (currentAudio === audio) currentAudio = null;
+          };
+          audio.onended = release;
+          audio.onerror = release;
+          await audio.play();
+          return;
+        }
+
         const response = await fetchImpl(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

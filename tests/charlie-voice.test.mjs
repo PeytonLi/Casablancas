@@ -3,12 +3,33 @@ import test from "node:test";
 
 import { createCharlieVoicePlayer } from "../src/charlie-voice.js";
 
+test("plays a bundled hard-coded answer without making a network request", async () => {
+  let playedUrl = "";
+  const player = createCharlieVoicePlayer({
+    audioByText: { "Okay, follow me.": "/audio/charlie-toilet.mp3" },
+    fetchImpl: async () => {
+      throw new Error("Bundled replies must not fetch");
+    },
+    audioFactory: (url) => ({
+      play: async () => { playedUrl = url; },
+      pause() {},
+      onended: null,
+      onerror: null,
+    }),
+  });
+
+  await player.speak("Okay, follow me.");
+
+  assert.equal(playedUrl, "/audio/charlie-toilet.mp3");
+});
+
 test("plays ElevenLabs audio returned by the server and releases its object URL", async () => {
   let request;
   let played = false;
   let revoked = "";
   let audio;
   const player = createCharlieVoicePlayer({
+    audioByText: {},
     endpoint: "https://example.test/tts",
     fetchImpl: async (url, options) => {
       request = { url, options };
@@ -43,6 +64,7 @@ test("plays ElevenLabs audio returned by the server and releases its object URL"
 
 test("reports a server failure so the UI can use its speech fallback", async () => {
   const player = createCharlieVoicePlayer({
+    audioByText: {},
     fetchImpl: async () => new Response("Unavailable", { status: 503 }),
   });
 
