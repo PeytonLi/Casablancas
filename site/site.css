@@ -150,7 +150,3 @@ body {
     height: 24px;
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  * { scroll-behavior: auto !important; }
-}
