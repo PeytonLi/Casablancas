@@ -55,8 +55,11 @@ test("uses a stable message when Charlie returns malformed JSON", async () => {
   await assert.rejects(client.ask("Where is the stage?"), { message: "Charlie is reconnecting." });
 });
 
-test("answers festival questions locally when the live service is unavailable", async () => {
+test("answers the two demo questions locally when the live service is unavailable", async () => {
   const client = createAskCharleyClient();
-  assert.match((await client.ask("Where is the bathroom?")).speech, /follow me/i);
-  assert.match((await client.ask("change the music")).speech, /tuner/i);
+  assert.equal((await client.ask("Where is the bathroom?")).speech, "Okay, follow me.");
+  assert.equal(
+    (await client.ask("What's the next show?")).speech,
+    "The next show is The Strokes at Lands End on August 8.",
+  );
 });

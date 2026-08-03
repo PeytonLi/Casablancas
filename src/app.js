@@ -10,6 +10,7 @@ import {
   toggleNavigation,
 } from "./map.js?v=navigation-polish-2";
 import { createAskCharleyClient } from "./ask-charley.js";
+import { createCharlieVoicePlayer } from "./charlie-voice.js";
 import {
   getAudioLevel,
   getTracks,
@@ -93,6 +94,7 @@ let askCharleyPending = false;
 
 const rig = createPerformerRig(rigContainer, { getAudioLevel });
 const askCharley = createAskCharleyClient();
+const charlieVoice = createCharlieVoicePlayer();
 
 for (let index = 0; index < 48; index += 1) {
   const bar = document.createElement("i");
@@ -452,11 +454,15 @@ askCharleyForm.addEventListener("submit", async (event) => {
     const reply = await askCharley.ask(askCharleyQuestion.value);
     askCharleySheet.dataset.destination = reply.dest;
     askCharleyStatus.textContent = reply.speech;
-    if ("speechSynthesis" in window && "SpeechSynthesisUtterance" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(reply.speech);
-      utterance.rate = 1.03;
-      window.speechSynthesis.speak(utterance);
+    try {
+      await charlieVoice.speak(reply.speech);
+    } catch {
+      if ("speechSynthesis" in window && "SpeechSynthesisUtterance" in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(reply.speech);
+        utterance.rate = 1.03;
+        window.speechSynthesis.speak(utterance);
+      }
     }
   } catch (error) {
     askCharleyStatus.textContent = error instanceof Error ? error.message : "Charlie is reconnecting.";

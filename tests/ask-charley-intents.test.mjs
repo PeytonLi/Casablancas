@@ -29,3 +29,8 @@ test("matches next-show questions with the fixed festival answer", async () => {
     );
   }
 });
+
+test("keeps the hackathon demo limited to the two supported questions", async () => {
+  const reply = await client.ask("Where can I get food?");
+  assert.equal(reply.speech, "Ask me about the nearest toilet or the next show.");
+});
